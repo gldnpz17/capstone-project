@@ -3,13 +3,24 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AdminLayout } from './layout/AdminLayout';
+import { DashboardPage } from './pages/admin/DashboardPage';
+import { SmartLocksPage } from './pages/admin/SmartLocksPage';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <Routes>
+        <Route path='/admin' element={<AdminLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path='locks' element={<SmartLocksPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   </React.StrictMode>
 );
 
