@@ -1,0 +1,45 @@
+.ant-layout-header {
+  background: #fff;
+}
+
+.sidebar-toggle {
+  margin-right: 1rem;
+  cursor: pointer;
+}
+
+.sidebar-toggle > svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  transition-duration: 0.3s;
+}
+
+.sidebar-toggle > svg:hover {
+  color: #1890ff;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  z-index: 100;
+}
+
+.ant-layout-header.page-header {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+#content-gutter {
+  overflow-y: auto;
+  padding: 1.2rem;
+}
+
+#content-container {
+  background-color: white;
+  padding: 0.5rem;
+  min-height: 100%;
+}
+
+.page-name {
+  font-size: 1.2rem;
+  font-weight: 500;
+}

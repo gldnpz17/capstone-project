@@ -1,0 +1,39 @@
+#admin-layout {
+  height: 100%;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  color: white;
+  font-size: larger;
+  overflow: hidden;
+  transition-duration: 0.25s;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+}
+
+.logo-container > img {
+  width: 1.2rem;
+  aspect-ratio: 1;
+  transition-duration: 0.25s;
+}
+.logo-container > div {
+  white-space: nowrap;
+  margin-left: 0.5rem;
+  transition-duration: 0.25s;
+}
+
+.logo-container.collapsed {
+  padding: 0 calc(50% - 1.8rem / 2);
+  left: 0%;
+  transform: translateX(0%) translateY(-50%);
+}
+.logo-container.collapsed > img {
+  width: 1.8rem;
+}
+.logo-container.collapsed > div {
+  opacity: 0%;
+}
