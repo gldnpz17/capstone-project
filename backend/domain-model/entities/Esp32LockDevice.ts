@@ -15,7 +15,7 @@ class Esp32LockDevice extends LockDevice {
     const password = await rng.generateRandomString(16)
 
     const encrypted = new EncryptedData()
-    await encrypted.SetData(password, encryption)
+    await encrypted.setData(password, encryption)
 
     this.adminPassword = encrypted
   }
@@ -24,7 +24,7 @@ class Esp32LockDevice extends LockDevice {
     const credential = await broker.createLockControllerAccount(this.identifier)
 
     const password = new EncryptedData()
-    await password.SetData(credential.password, encryption)
+    await password.setData(credential.password, encryption)
 
     this.brokerCredential = new EncryptedBrokerCredential()
     this.brokerCredential.username = credential.username
