@@ -2,7 +2,7 @@ import { DataTypes, Model, ModelStatic, Sequelize } from 'sequelize'
 
 abstract class SequelizeModelBase {
   protected model: ModelStatic<Model<any, any>>
-  private static initialized = false
+  private static initializedModels: string[] = []
 
   constructor(protected modelName: string, protected sequelize: Sequelize) { 
     if (!sequelize.models[modelName]) {
@@ -15,9 +15,9 @@ abstract class SequelizeModelBase {
   protected abstract createModel(): ModelStatic<Model<any, any>>
 
   async initialize(): Promise<ModelStatic<Model<any, any>>> {
-    if (!SequelizeModelBase.initialized) {
+    if (!SequelizeModelBase.initializedModels.find(model => model == this.modelName)) {
       await this.model.sync()
-      SequelizeModelBase.initialized = true
+      SequelizeModelBase.initializedModels.push(this.modelName)
     }
     return this.model
   }
@@ -55,4 +55,25 @@ class AccountModel extends SequelizeModelBase {
   }
 }
 
-export { AccountModel }
+class AdminPrivilegePresetModel extends SequelizeModelBase {
+  constructor(sequelize: Sequelize) { super('AdminPrivilegePreset', sequelize) } 
+
+  protected createModel(): ModelStatic<Model<any, any>> {
+    return this.sequelize.define(this.modelName, {
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      canManageAccounts: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false
+      },
+      canManageLocks: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false
+      }
+    })
+  }
+}
+
+export { AccountModel, AdminPrivilegePresetModel }

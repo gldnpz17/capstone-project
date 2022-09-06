@@ -38,7 +38,7 @@ class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
 
   update = async (id: number | string, instance: any): Promise<TEntity | undefined> => {
     const modelInstance = await this.model.findByPk(id)
-    await modelInstance?.update({ ...instance })
+    await modelInstance?.update(instance)
     const entity = modelInstance?.toJSON()
 
     return this.mapper.map(entity).get()

@@ -1,4 +1,5 @@
 import { Account } from "../../domain-model/entities/Account";
+import { AdminPrivilegePreset } from "../../domain-model/entities/AdminPrivilegePreset";
 import { PasswordCredential } from "../../domain-model/entities/PasswordCredential";
 import { TotpCredential } from "../../domain-model/entities/TotpCredential";
 
@@ -23,7 +24,7 @@ class AccountExtender extends BaseExtender<Account> {
     item: Account, 
     private passwordCredentialMapper: PasswordCredentialMapper,
     private totpCredentialMapper: TotpCredentialMapper
-  ) { super(item)}
+  ) { super(item) }
 
   addPassword(instance: any): this {
     this.item.password = this.passwordCredentialMapper.map(instance).get()
@@ -70,4 +71,17 @@ class AccountMapper extends EntityMapperBase<Account> {
   }
 }
 
-export { AccountMapper, PasswordCredentialMapper, TotpCredentialMapper, EntityMapperBase }
+class AdminPrivilegePresetMapper extends EntityMapperBase<AdminPrivilegePreset> {
+  override map(original: any): BaseExtender<AdminPrivilegePreset> {
+    const { id, name, canManageAccounts, canManageLocks } = original
+    return new BaseExtender(new AdminPrivilegePreset(id, name, canManageAccounts, canManageLocks))
+  }
+}
+
+export { 
+  AccountMapper, 
+  PasswordCredentialMapper, 
+  TotpCredentialMapper, 
+  AdminPrivilegePresetMapper,
+  EntityMapperBase 
+}

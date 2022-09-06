@@ -1,7 +1,23 @@
-class ApplicationConfiguration {
+import { AdminPrivilegePreset } from "../entities/AdminPrivilegePreset"
+
+const AdminPrivilegeNames = {
+  canManageAccounts: 'canManageAccounts',
+  canManageLocks: 'canManageLocks'
+}
+
+class AdminPrivilege {
   constructor(
-    public jwtSigningSecret: string
+    public name: string,
+    public description: string,
+    public getValue: (preset: AdminPrivilegePreset) => boolean
   ) { }
 }
 
-export { ApplicationConfiguration }
+class ApplicationConfiguration {
+  constructor(
+    public jwtSigningSecret: string,
+    public adminPrivileges: AdminPrivilege[]
+  ) { }
+}
+
+export { ApplicationConfiguration, AdminPrivilege, AdminPrivilegeNames }
