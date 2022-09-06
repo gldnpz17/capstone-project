@@ -15,7 +15,7 @@ class SequelizeTotpCredentialsRepository implements TotpCredentialsRepository {
     private mapper: EntityMapperBase<TotpCredential>
   ) { }
 
-  readByAccountId = this.totpCredentialsCrud.readById.bind(this.totpCredentialsCrud)
+  readByAccountId = this.totpCredentialsCrud.readById
 }
 
 export { TotpCredentialsRepository, SequelizeTotpCredentialsRepository }

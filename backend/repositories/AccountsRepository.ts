@@ -22,11 +22,11 @@ class SequelizeAccountsRepository implements AccountsRepository {
     private mapper: AccountMapper
   ) { }
 
-  create = this.accountCrud.create.bind(this.accountCrud)
+  create = this.accountCrud.create
 
-  readAll = this.accountCrud.readAll.bind(this.accountCrud)
+  readAll = this.accountCrud.readAll
 
-  readById = this.accountCrud.readById.bind(this.accountCrud)
+  readById = this.accountCrud.readById
   
   async readByUsernameWithPassword(username: string): Promise<Account | undefined> {
     const instance = (await this.accountModel.findOne({ where: { username } }))?.toJSON()
@@ -44,7 +44,7 @@ class SequelizeAccountsRepository implements AccountsRepository {
     return this.mapper.map(instance).addTotp(instance).get()
   }
   
-  delete = this.accountCrud.delete.bind(this.accountCrud)
+  delete = this.accountCrud.delete
 }
 
 export { AccountsRepository, SequelizeAccountsRepository }

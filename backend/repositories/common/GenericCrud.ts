@@ -20,11 +20,10 @@ class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
     private mapper: EntityMapperBase<TEntity>
   ) {  }
 
-  async create(instance: any): Promise<TEntity> {
-    return this.mapper.map((await this.model.create(instance)).toJSON()).get()
-  }
+  create = async (instance: any): Promise<TEntity> => 
+    this.mapper.map((await this.model.create(instance)).toJSON()).get()
 
-  async readAll(config: GenericReadAllConfig): Promise<TEntity[]> {
+  readAll = async (config: GenericReadAllConfig): Promise<TEntity[]> => {
     return (await this.model
       .findAll({ 
         offset: config.start ?? 0, 
@@ -34,11 +33,10 @@ class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
       .map(item => this.mapper.map(item).get())
   }
 
-  async readById(id: number | string): Promise<TEntity | undefined> {
-    return this.mapper.map((await this.model.findByPk(id))?.toJSON()).get() 
-  }
+  readById = async (id: number | string): Promise<TEntity | undefined> =>
+    this.mapper.map((await this.model.findByPk(id))?.toJSON()).get() 
 
-  async update(id: number | string, instance: any): Promise<TEntity | undefined> {
+  update = async (id: number | string, instance: any): Promise<TEntity | undefined> => {
     const modelInstance = await this.model.findByPk(id)
     await modelInstance?.update({ ...instance })
     const entity = modelInstance?.toJSON()
@@ -46,7 +44,7 @@ class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
     return this.mapper.map(entity).get()
   }
 
-  async delete(id: number | string): Promise<TEntity | undefined> {
+  delete = async (id: number | string): Promise<TEntity | undefined> => {
     const modelInstance = await this.model.findByPk(id)
     const entity = modelInstance?.toJSON()
     
