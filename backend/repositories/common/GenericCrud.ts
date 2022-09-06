@@ -14,11 +14,7 @@ interface GenericCrud<TEntity> {
 }
 
 class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
-  model: ModelStatic<Model<any, any>>
-  
-  constructor(model: ModelStatic<Model<any, any>>) {
-    this.model = model
-  }
+  constructor(private model: ModelStatic<Model<any, any>>) {  }
 
   async create(instance: any): Promise<TEntity> {
     return (await this.model.create(instance)).toJSON()

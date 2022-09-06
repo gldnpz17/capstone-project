@@ -1,6 +1,9 @@
+import { PasswordCredential } from "./PasswordCredential"
+
 class Account {
-  id: Number
+  id: String
   username: String
+  password: PasswordCredential | undefined
 }
 
 export { Account }
