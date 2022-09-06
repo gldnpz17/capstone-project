@@ -1,4 +1,5 @@
 import { Model, ModelStatic } from "sequelize/types"
+import { EntityMapperBase } from "./RepositoryMapper"
 
 interface GenericReadAllConfig {
   start?: number
@@ -8,16 +9,19 @@ interface GenericReadAllConfig {
 interface GenericCrud<TEntity> {
   create(instance: any): Promise<TEntity>
   readAll(config: GenericReadAllConfig): Promise<TEntity[]>
-  readById(id: number): Promise<TEntity | undefined>
-  update(id: number, instance: any): Promise<TEntity | undefined>
-  delete(id: number): Promise<TEntity | undefined>
+  readById(id: number | string): Promise<TEntity | undefined>
+  update(id: number | string, instance: any): Promise<TEntity | undefined>
+  delete(id: number | string): Promise<TEntity | undefined>
 }
 
 class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
-  constructor(private model: ModelStatic<Model<any, any>>) {  }
+  constructor(
+    private model: ModelStatic<Model<any, any>>,
+    private mapper: EntityMapperBase<TEntity>
+  ) {  }
 
   async create(instance: any): Promise<TEntity> {
-    return (await this.model.create(instance)).toJSON()
+    return this.mapper.map((await this.model.create(instance)).toJSON()).get()
   }
 
   async readAll(config: GenericReadAllConfig): Promise<TEntity[]> {
@@ -27,27 +31,28 @@ class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
         limit: config.count
       }))
       .map(model => model.toJSON())
+      .map(item => this.mapper.map(item).get())
   }
 
-  async readById(id: number): Promise<TEntity | undefined> {
-    return (await this.model.findByPk(id))?.toJSON()
+  async readById(id: number | string): Promise<TEntity | undefined> {
+    return this.mapper.map((await this.model.findByPk(id))?.toJSON()).get() 
   }
 
-  async update(id: number, instance: any): Promise<TEntity | undefined> {
+  async update(id: number | string, instance: any): Promise<TEntity | undefined> {
     const modelInstance = await this.model.findByPk(id)
     await modelInstance?.update({ ...instance })
     const entity = modelInstance?.toJSON()
 
-    return entity
+    return this.mapper.map(entity).get()
   }
 
-  async delete(id: number): Promise<TEntity | undefined> {
+  async delete(id: number | string): Promise<TEntity | undefined> {
     const modelInstance = await this.model.findByPk(id)
     const entity = modelInstance?.toJSON()
     
     await modelInstance?.destroy()
 
-    return entity
+    return this.mapper.map(entity).get()
   }
 }
 

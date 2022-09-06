@@ -1,9 +1,14 @@
 import { PasswordCredential } from "./PasswordCredential"
+import { TotpCredential } from "./TotpCredential"
 
 class Account {
-  id: String
-  username: String
-  password: PasswordCredential | undefined
+  constructor(
+    public id: string,
+    public username: string,
+    public password?: PasswordCredential | undefined,
+    public totp?: TotpCredential | undefined
+  ) { }
+
 }
 
 export { Account }

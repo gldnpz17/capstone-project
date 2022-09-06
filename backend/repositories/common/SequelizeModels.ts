@@ -30,6 +30,11 @@ class AccountModel extends SequelizeModelBase {
 
   protected createModel(): ModelStatic<Model<any, any>> {
     return this.sequelize.define(this.modelName, {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+      },
       username: {
         type: DataTypes.STRING,
         allowNull: false
@@ -39,6 +44,10 @@ class AccountModel extends SequelizeModelBase {
         allowNull: false
       },
       salt: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      totpSharedSecret: {
         type: DataTypes.STRING,
         allowNull: false
       }

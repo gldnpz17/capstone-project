@@ -1,6 +1,8 @@
 class PasswordCredential {
-  hash: string
-  salt: string
+  constructor(
+    public hash: string,
+    public salt: string
+  ) { }
 }
 
 export { PasswordCredential }
