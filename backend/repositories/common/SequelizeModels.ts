@@ -5,7 +5,14 @@ abstract class SequelizeInstance {
   
   public static modelNames = {
     account: 'Account',
-    adminPrivilegePreset: 'AdminPrivilegePreset'
+    adminPrivilegePreset: 'AdminPrivilegePreset',
+    claimType: 'ClaimType',
+    claimInstance: 'ClaimInstance',
+    enumClaimTypeOption: 'EnumClaimTypeOption'
+  }
+
+  public static getId(modelName: string) {
+    return modelName + 'Id'
   }
 
   constructor() {
@@ -15,7 +22,7 @@ abstract class SequelizeInstance {
   protected abstract getSequelize(): Sequelize
 
   public async initialize(): Promise<this> {
-    const Accounts = this.sequelize.define(SequelizeInstance.modelNames.account, {
+    const Account = this.sequelize.define(SequelizeInstance.modelNames.account, {
       id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -59,12 +66,53 @@ abstract class SequelizeInstance {
       }
     })
 
-    AdminPrivileges.hasMany(Accounts, {
+    const ClaimType = this.sequelize.define(SequelizeInstance.modelNames.claimType, {
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      dataType: {
+        type: DataTypes.ENUM('string', 'number', 'boolean', 'enum'),
+        allowNull: false
+      },
+      enumDefaultOption: {
+        type: DataTypes.INTEGER
+      }
+    })
+
+    const EnumClaimTypeOption = this.sequelize.define(SequelizeInstance.modelNames.enumClaimTypeOption, {
+      value: {
+        type: DataTypes.STRING,
+        allowNull: false
+      }
+    })
+
+    const ClaimInstance = this.sequelize.define(SequelizeInstance.modelNames.claimInstance, {
+      stringValue: DataTypes.STRING,
+      numberValue: DataTypes.DOUBLE,
+      booleanValue: DataTypes.BOOLEAN,
+      enumValue: DataTypes.STRING
+    })
+
+    AdminPrivileges.hasMany(Account, {
       foreignKey: {
         allowNull: false
       }
     })
-    Accounts.belongsTo(AdminPrivileges)
+    Account.belongsTo(AdminPrivileges)
+
+    Account.hasMany(ClaimInstance, { 
+      foreignKey: { 
+        allowNull: false 
+      } 
+    })
+    ClaimInstance.belongsTo(Account)
+
+    ClaimType.hasMany(EnumClaimTypeOption)
+    EnumClaimTypeOption.belongsTo(ClaimType)
+
+    ClaimType.hasMany(ClaimInstance)
+    ClaimInstance.belongsTo(ClaimType)
 
     await this.sequelize.sync()
 

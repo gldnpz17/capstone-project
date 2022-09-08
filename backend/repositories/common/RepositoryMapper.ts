@@ -1,5 +1,7 @@
 import { Account } from "../../domain-model/entities/Account";
 import { AdminPrivilegePreset } from "../../domain-model/entities/AdminPrivilegePreset";
+import { ClaimType, ClaimTypeOptions, ClaimTypesUnion, EnumClaimType } from "../../domain-model/entities/ClaimType";
+import { EnumClaimTypeOption } from "../../domain-model/entities/EnumClaimTypeOption";
 import { PasswordCredential } from "../../domain-model/entities/PasswordCredential";
 import { TotpCredential } from "../../domain-model/entities/TotpCredential";
 
@@ -71,9 +73,7 @@ class AdminPrivilegePresetExtender extends BaseExtender<AdminPrivilegePreset> {
   constructor(
     item: AdminPrivilegePreset,
     private accountMapper: AccountMapper
-  ) { 
-    super(item)
-  }
+  ) { super(item) }
 
   addAccounts(accounts: Account[]): this {
     this.item.accounts = accounts.map(account => this.accountMapper.map(account).get())
@@ -96,10 +96,42 @@ class AdminPrivilegePresetMapper extends EntityMapperBase<AdminPrivilegePreset> 
   }
 }
 
+class EnumClaimTypeExtender extends BaseExtender<EnumClaimType> {
+  constructor(item: EnumClaimType) { super(item) }
+
+  addOptions(options: EnumClaimTypeOption[]): this {
+    this.item.options = options
+    return this
+  }
+}
+
+class ClaimTypeMapper extends EntityMapperBase<ClaimTypesUnion> {
+  override map(original: any): EnumClaimTypeExtender | BaseExtender<ClaimTypesUnion> {
+    const { id, name } = original
+    const type: ClaimTypeOptions = original.dataType
+    
+    switch(type) {
+      case 'enum':
+        return new EnumClaimTypeExtender(new EnumClaimType(id, name))
+      default:
+        return new BaseExtender(new ClaimType(id, name, type))
+    }
+  }
+}
+
+class EnumClaimTypeOptionsMapper extends EntityMapperBase<EnumClaimTypeOption> {
+  override map(original: any): BaseExtender<EnumClaimTypeOption> {
+    const { id, value } = original
+    return new BaseExtender(new EnumClaimTypeOption(id, value))
+  }
+}
+
 export { 
   AccountMapper, 
   PasswordCredentialMapper, 
   TotpCredentialMapper, 
   AdminPrivilegePresetMapper,
-  EntityMapperBase 
+  EntityMapperBase,
+  ClaimTypeMapper,
+  EnumClaimTypeOptionsMapper
 }
