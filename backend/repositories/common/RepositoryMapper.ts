@@ -35,10 +35,6 @@ class AccountExtender extends BaseExtender<Account> {
     this.item.totp = this.totpCredentialMapper.map(instance).get()
     return this
   }
-
-  get(): Account {
-    return this.item
-  }
 }
 
 class PasswordCredentialMapper extends EntityMapperBase<PasswordCredential> {
@@ -71,10 +67,32 @@ class AccountMapper extends EntityMapperBase<Account> {
   }
 }
 
+class AdminPrivilegePresetExtender extends BaseExtender<AdminPrivilegePreset> {
+  constructor(
+    item: AdminPrivilegePreset,
+    private accountMapper: AccountMapper
+  ) { 
+    super(item)
+  }
+
+  addAccounts(accounts: Account[]): this {
+    this.item.accounts = accounts.map(account => this.accountMapper.map(account).get())
+
+    return this
+  }
+}
+
 class AdminPrivilegePresetMapper extends EntityMapperBase<AdminPrivilegePreset> {
-  override map(original: any): BaseExtender<AdminPrivilegePreset> {
-    const { id, name, canManageAccounts, canManageLocks } = original
-    return new BaseExtender(new AdminPrivilegePreset(id, name, canManageAccounts, canManageLocks))
+  constructor(
+    private accountMapper: AccountMapper
+  ) { super() }
+
+  override map(original: any): AdminPrivilegePresetExtender {
+    const { id, name, system, canManageAccounts, canManageLocks } = original
+    return new AdminPrivilegePresetExtender(
+      new AdminPrivilegePreset(id, name, system, canManageAccounts, canManageLocks),
+      this.accountMapper
+    )
   }
 }
 

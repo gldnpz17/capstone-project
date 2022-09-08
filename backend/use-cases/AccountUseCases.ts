@@ -51,12 +51,20 @@ class AccountUseCases {
     private authenticationTokenService: TransientTokenService<AuthenticationToken>
   ) { }
 
-  async register(account: { username: string, password: string, totpSharedSecret: string, verificationTotp: string }): Promise<Account> {
+  async register(account: { username: string, password: string, totpSharedSecret: string, verificationTotp: string, privilegeId: number }): Promise<Account> {
     const { salt, hash } = this.passwordService.hash(account.password)
 
     if (!this.totpService.totpIsValid(account.totpSharedSecret, account.password)) throw new NotImplementedError()
 
-    return await this.accountsRepository.create({ username: account.username, salt, hash, totpSharedSecret: account.totpSharedSecret })
+    const { username, totpSharedSecret, privilegeId } = account
+
+    return await this.accountsRepository.create({ 
+      username,
+      salt, 
+      hash, 
+      totpSharedSecret,
+      privilegeId
+    })
   }
 
   getTotpSecret() {

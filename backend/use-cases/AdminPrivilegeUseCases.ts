@@ -1,4 +1,6 @@
+import { NotImplementedError } from "../common/Errors";
 import { AdminPrivilege, ApplicationConfiguration } from "../domain-model/common/ApplicationConfiguration";
+import { AccountsRepository } from "../repositories/AccountsRepository";
 import { AdminPrivilegePresetRepository } from "../repositories/AdminPrivilegePresetRepository";
 
 class AdminPrivilegeMetadata {
@@ -15,18 +17,44 @@ class AdminPrivilegeMetadata {
 class AdminPrivilegeUseCases {
   constructor(
     private config: ApplicationConfiguration,
-    private repository: AdminPrivilegePresetRepository
+    private accountsRepository: AccountsRepository,
+    private privilegesRepository: AdminPrivilegePresetRepository
   ) { }
 
   readAvailablePrivileges(): AdminPrivilegeMetadata[] {
     return this.config.adminPrivileges.map(privilege => new AdminPrivilegeMetadata(privilege))
   }
 
-  create = this.repository.create
-  readById = this.repository.readById
-  readAll = this.repository.readAll
-  update = this.repository.update
-  delete = this.repository.delete
+  create = async (privilege: { 
+    name: string, 
+    canManageAccounts: boolean,
+    canManageLocks: boolean
+  }) => {
+    await this.privilegesRepository.create({ system: false, ...privilege })
+  }
+  readById = this.privilegesRepository.readById
+  readAll = this.privilegesRepository.readAll
+  readByAccountId = this.privilegesRepository.readByAccountId
+  update = this.privilegesRepository.update
+  delete = async (id: number) => {
+    const privilege = await this.privilegesRepository.readByIdIncludeAccounts(id)
+
+    if (!privilege) return undefined
+
+    if (privilege && privilege.system) throw new NotImplementedError()
+    
+    if (privilege?.accounts) {
+      const endUserPreset = await this.privilegesRepository.readEndUserPreset()
+
+      console.log('privv', privilege, endUserPreset)
+
+      await Promise.all(privilege.accounts.map(async account => {
+        await this.accountsRepository.updateAdminPrivilege(account.id, endUserPreset.id)
+      }))
+    }
+
+    return await this.privilegesRepository.delete(privilege.id)
+  }
 }
 
 export { AdminPrivilegeUseCases, AdminPrivilegeMetadata }

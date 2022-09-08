@@ -1,35 +1,21 @@
 import { DataTypes, Model, ModelStatic, Sequelize } from 'sequelize'
 
-abstract class SequelizeModelBase {
-  protected model: ModelStatic<Model<any, any>>
-  private static initializedModels: string[] = []
-
-  constructor(protected modelName: string, protected sequelize: Sequelize) { 
-    if (!sequelize.models[modelName]) {
-      this.model = this.createModel()
-    } else {
-      this.model = sequelize.models[modelName]
-    }
+abstract class SequelizeInstance {
+  private sequelize: Sequelize
+  
+  public static modelNames = {
+    account: 'Account',
+    adminPrivilegePreset: 'AdminPrivilegePreset'
   }
 
-  protected abstract createModel(): ModelStatic<Model<any, any>>
-
-  async initialize(): Promise<ModelStatic<Model<any, any>>> {
-    if (!SequelizeModelBase.initializedModels.find(model => model == this.modelName)) {
-      await this.model.sync()
-      SequelizeModelBase.initializedModels.push(this.modelName)
-    }
-    return this.model
-  }
-}
-
-class AccountModel extends SequelizeModelBase {
-  constructor(sequelize: Sequelize) {
-    super('Account', sequelize)
+  constructor() {
+    this.sequelize = this.getSequelize()
   }
 
-  protected createModel(): ModelStatic<Model<any, any>> {
-    return this.sequelize.define(this.modelName, {
+  protected abstract getSequelize(): Sequelize
+
+  public async initialize(): Promise<this> {
+    const Accounts = this.sequelize.define(SequelizeInstance.modelNames.account, {
       id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -51,17 +37,16 @@ class AccountModel extends SequelizeModelBase {
         type: DataTypes.STRING,
         allowNull: false
       }
-    })  
-  }
-}
+    })
 
-class AdminPrivilegePresetModel extends SequelizeModelBase {
-  constructor(sequelize: Sequelize) { super('AdminPrivilegePreset', sequelize) } 
-
-  protected createModel(): ModelStatic<Model<any, any>> {
-    return this.sequelize.define(this.modelName, {
+    const AdminPrivileges = this.sequelize.define(SequelizeInstance.modelNames.adminPrivilegePreset, {
       name: {
         type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+      },
+      system: {
+        type: DataTypes.BOOLEAN,
         allowNull: false
       },
       canManageAccounts: {
@@ -73,7 +58,43 @@ class AdminPrivilegePresetModel extends SequelizeModelBase {
         allowNull: false
       }
     })
+
+    AdminPrivileges.hasMany(Accounts, {
+      foreignKey: {
+        allowNull: false
+      }
+    })
+    Accounts.belongsTo(AdminPrivileges)
+
+    await this.sequelize.sync()
+
+    await AdminPrivileges.bulkCreate([
+      {
+        name: 'End User',
+        system: true,
+        canManageAccounts: false,
+        canManageLocks: true
+      }, 
+      {
+        name: 'Super Admin',
+        system: true,
+        canManageAccounts: true,
+        canManageLocks: true
+      }
+    ])
+
+    return this
+  }
+
+  public getModel(modelName: string) {
+    return this.sequelize.models[modelName]
   }
 }
 
-export { AccountModel, AdminPrivilegePresetModel }
+class InMemorySqliteSequelizeInstance extends SequelizeInstance{
+  protected getSequelize(): Sequelize {
+    return new Sequelize('sqlite::memory')
+  }
+}
+
+export { SequelizeInstance, InMemorySqliteSequelizeInstance }
