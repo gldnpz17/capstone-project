@@ -111,7 +111,9 @@ abstract class SequelizeInstance {
     ClaimType.hasMany(EnumClaimTypeOption)
     EnumClaimTypeOption.belongsTo(ClaimType)
 
-    ClaimType.hasMany(ClaimInstance)
+    ClaimType.hasMany(ClaimInstance, {
+      onDelete: 'CASCADE'
+    })
     ClaimInstance.belongsTo(ClaimType)
 
     await this.sequelize.sync()

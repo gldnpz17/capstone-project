@@ -1,9 +1,11 @@
 import { NotImplementedError } from '../common/Errors'
 import { Account } from '../domain-model/entities/Account'
+import { ClaimType } from '../domain-model/entities/ClaimType'
 import { PasswordService } from '../domain-model/services/PasswordService'
 import { TotpService } from '../domain-model/services/TotpService'
 import { TransientTokenService } from '../domain-model/services/TransientTokenService'
 import { AccountsRepository } from '../repositories/AccountsRepository'
+import { ClaimInstancesRepository } from '../repositories/ClaimInstancesRepository'
 import { GenericReadAllConfig } from '../repositories/common/GenericCrud'
 import { TotpCredentialsRepository } from '../repositories/TotpCredentialsRepository'
 
@@ -48,7 +50,8 @@ class AccountUseCases {
     private passwordService: PasswordService,
     private totpService: TotpService,
     private secondFactorTokenService: TransientTokenService<SecondFactorToken>,
-    private authenticationTokenService: TransientTokenService<AuthenticationToken>
+    private authenticationTokenService: TransientTokenService<AuthenticationToken>,
+    private claimInstancesRepository: ClaimInstancesRepository
   ) { }
 
   async register(account: { username: string, password: string, totpSharedSecret: string, verificationTotp: string, privilegeId: number }): Promise<Account> {
@@ -100,6 +103,14 @@ class AccountUseCases {
 
     return new SecondFactorAuthenticationResult(token)
   }
+
+  addClaim = this.claimInstancesRepository.create
+
+  updateClaim = this.claimInstancesRepository.update
+
+  deleteClaim = this.claimInstancesRepository.delete
+
+  readByIdIncludeClaims = this.accountsRepository.readByIdIncludeClaims
 
   async readAll(config: GenericReadAllConfig): Promise<Account[]> {
     return await this.accountsRepository.readAll(config)

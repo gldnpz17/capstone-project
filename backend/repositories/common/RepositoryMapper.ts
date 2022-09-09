@@ -1,5 +1,7 @@
+import { NotImplementedError } from "../../common/Errors";
 import { Account } from "../../domain-model/entities/Account";
 import { AdminPrivilegePreset } from "../../domain-model/entities/AdminPrivilegePreset";
+import { BooleanClaim, ClaimInstance, ClaimInstanceUnion, EnumClaim, NumberClaim, StringClaim } from "../../domain-model/entities/ClaimInstance";
 import { ClaimType, ClaimTypeOptions, ClaimTypesUnion, EnumClaimType } from "../../domain-model/entities/ClaimType";
 import { EnumClaimTypeOption } from "../../domain-model/entities/EnumClaimTypeOption";
 import { PasswordCredential } from "../../domain-model/entities/PasswordCredential";
@@ -25,7 +27,8 @@ class AccountExtender extends BaseExtender<Account> {
   constructor(
     item: Account, 
     private passwordCredentialMapper: PasswordCredentialMapper,
-    private totpCredentialMapper: TotpCredentialMapper
+    private totpCredentialMapper: TotpCredentialMapper,
+    private claimMapper: ClaimInstanceMapper
   ) { super(item) }
 
   addPassword(instance: any): this {
@@ -35,6 +38,11 @@ class AccountExtender extends BaseExtender<Account> {
 
   addTotp(instance: any): this {
     this.item.totp = this.totpCredentialMapper.map(instance).get()
+    return this
+  }
+
+  addClaims(instances: any[]): this {
+    this.item.claims = instances.map(instance => this.claimMapper.map(instance).get())
     return this
   }
 }
@@ -56,7 +64,8 @@ class TotpCredentialMapper extends EntityMapperBase<TotpCredential> {
 class AccountMapper extends EntityMapperBase<Account> {
   constructor(
     private passwordCredentialMapper: PasswordCredentialMapper,
-    private totpCredentialMapper: TotpCredentialMapper
+    private totpCredentialMapper: TotpCredentialMapper,
+    private claimMapper: ClaimInstanceMapper
   ) { super() }
 
   override map(original: any): AccountExtender {
@@ -64,7 +73,8 @@ class AccountMapper extends EntityMapperBase<Account> {
     return new AccountExtender(
       new Account(id, username),
       this.passwordCredentialMapper,
-      this.totpCredentialMapper
+      this.totpCredentialMapper,
+      this.claimMapper
     )
   }
 }
@@ -126,6 +136,34 @@ class EnumClaimTypeOptionsMapper extends EntityMapperBase<EnumClaimTypeOption> {
   }
 }
 
+class ClaimInstanceMapper extends EntityMapperBase<ClaimInstanceUnion> {
+  override map(original: any): BaseExtender<ClaimInstanceUnion> {
+    const { id } = original
+    const type: ClaimType = original.ClaimType
+    const value = original[`${type.dataType}Value`]
+
+    let claim: ClaimInstanceUnion
+    switch(type.dataType) {
+      case 'string':
+        claim = new StringClaim(id, type, value)
+        break
+      case 'boolean':
+        claim = new BooleanClaim(id, type, value)
+        break
+      case 'number':
+        claim = new NumberClaim(id, type, value)
+        break
+      case 'enum':
+        claim = new EnumClaim(id, type, value)
+        break
+      default:
+        throw new NotImplementedError()
+    }
+
+    return new BaseExtender(claim)
+  }
+}
+
 export { 
   AccountMapper, 
   PasswordCredentialMapper, 
@@ -133,5 +171,6 @@ export {
   AdminPrivilegePresetMapper,
   EntityMapperBase,
   ClaimTypeMapper,
-  EnumClaimTypeOptionsMapper
+  EnumClaimTypeOptionsMapper,
+  ClaimInstanceMapper
 }

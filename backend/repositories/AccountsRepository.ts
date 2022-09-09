@@ -11,6 +11,7 @@ interface AccountsRepository {
   create(account: { username: string, salt: string, hash: string, totpSharedSecret: string, privilegeId: number }): Promise<Account>
   readAll(config: GenericReadAllConfig): Promise<Account[]>
   readById(id: string): Promise<Account | undefined>
+  readByIdIncludeClaims(id: string): Promise<Account | undefined>
   readByUsernameWithPassword(username: string): Promise<Account | undefined>
   readByIdIncludeTotp(id: string): Promise<Account | undefined>
   updateAdminPrivilege(accountId: string, privilegeId: number): Promise<Account | undefined>
@@ -26,6 +27,21 @@ class SequelizeAccountsRepository implements AccountsRepository {
     private db: SequelizeInstance,
     private mapper: AccountMapper
   ) { }
+
+  readByIdIncludeClaims = async (id: string): Promise<Account | undefined> => {
+    const account = await this.accountModel.findByPk(id, {
+      include: {
+        model: this.db.getModel(SequelizeInstance.modelNames.claimInstance),
+        include: [ this.db.getModel(SequelizeInstance.modelNames.claimType) ]
+      }
+    })
+
+    const instance = account?.toJSON()
+
+    if (!instance) return undefined
+
+    return this.mapper.map(instance).addClaims(instance.ClaimInstances).get()
+  }
 
   create = async (
     account: { 
