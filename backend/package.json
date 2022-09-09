@@ -11,6 +11,8 @@
     "base32-encode": "^2.0.0",
     "bcryptjs": "^2.4.3",
     "graphql": "^16.6.0",
+    "graphql-relay": "^0.10.0",
+    "graphql-sequelize": "^9.4.3",
     "jsonwebtoken": "^8.5.1",
     "otplib": "^12.0.1",
     "rfc4648": "^1.5.2",
