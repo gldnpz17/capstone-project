@@ -2,6 +2,14 @@
     font-family: 'Poppins', sans-serif; /* Change your font family */
   }
   
+  .add2-btn {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin:auto;
+    margin-top : 20px;
+  }
+
   .content-table {
     border-collapse: collapse;
     margin: 25px 0;
