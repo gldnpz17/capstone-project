@@ -1,13 +1,31 @@
-import React from 'react'
-import '../styles/AccManagement.css'
+import React from 'react';
+import '../styles/AccManagement.css';
+import { Button, Typography, Grid, createTheme,ThemeProvider } from '@mui/material';
 
 const AccManagement = () =>  {
 
+  const theme = createTheme({
+    typography: {
+      fontFamily: [
+        'Poppins',
+        'sans-serif',
+      ].join(','),
+    },});
+
     return (
         <div class="main">
-          <div className="add-btn">
-                Add User
-            </div>
+
+          <div class="add2-btn">
+          <ThemeProvider theme={theme} >
+            <Grid>
+                <Grid item xs={12}>
+                    <Button type="submit" /*onClick={}*/ variant="outlined" color="primary" value="" style={{ backgroundColor: '#5572c7', color: '#FFFFFF', textTransform: 'none'}}>
+                        <Typography style={{ fontWeight: 500 }}>Add User</Typography></Button>
+                </Grid>
+            </Grid>
+          </ThemeProvider>
+          </div>
+
           <table class="content-table">
                 <thead>
                   <tr>
