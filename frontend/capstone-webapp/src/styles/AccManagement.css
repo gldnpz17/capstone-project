@@ -1,0 +1,223 @@
+* {
+    font-family: 'Poppins', sans-serif; /* Change your font family */
+  }
+  
+  .add2-btn {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin:auto;
+    margin-bottom : 40px;
+  }
+
+  .content-table {
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 14px;
+    min-width: 60vw;
+    border-radius: 5px 5px 0 0;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  .content-table thead tr {
+    background-color: #5572c7;
+    color: #ffffff;
+    text-align: left;
+    font-weight: lighter;
+  }
+  
+  .content-table th,
+  .content-table td {
+    padding: 12px 15px;
+  }
+  
+  .content-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+  }
+  
+  /*
+  .content-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+  }
+  */
+  
+  .content-table tbody tr:last-of-type {
+    border-bottom: 2px solid #5572c7;
+  }
+  
+  .content-table tbody tr {
+    font-weight: 200px;
+    
+  }
+
+  .content-table tbody tr.active-row {
+    font-weight: 200px;
+    color: #009879;
+  }
+
+  .add-btn {
+    background-color: #5572c7;
+    width:20%;
+    padding: 5px 5px 5px 5px;
+    margin-top:15px;
+    margin:auto;
+    border-radius:5px;
+    color:white;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    display: flex;
+    transition: 0.3s;
+    font-size:14px;
+    cursor:pointer;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  .add-btn:hover {
+    background-color: #293e7b;
+    transition: 0.3s;
+  }
+  
+  .add-btn:active {
+    transform: scale(0.8)
+  }
+
+  .act-btn {
+    margin: 0px 3px;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    border:none;
+    cursor:pointer;
+  }
+
+  th {
+    text-align: center;
+  }
+
+  td {
+    text-align: center;
+  }
+
+.fa-edit {
+    color: white;
+    margin:2px;
+}
+
+.fa-trash {
+    color:white;
+    margin:2px;
+}
+
+.edit-btn {
+    background-color: rgb(249, 204, 57);
+    border-radius:5px;
+    transition: 0.3s;
+}
+
+.edit-btn:hover {
+    background-color: rgb(214, 169, 22);
+    border-radius:5px;
+    transition: 0.3s;
+}
+
+.del-btn {
+    background-color: rgb(219, 77, 77);
+    border-radius:5px;
+    transition: 0.3s;
+}
+
+.del-btn:hover {
+    background-color: rgb(167, 26, 26);
+    border-radius:5px;
+    transition: 0.3s;
+}
+
+.edit-btn:active {
+    transform: scale(0.8)
+  }
+
+.del-btn:active {
+    transform: scale(0.8)
+  }
+
+.modal, .overlay {
+  width: 100vw;
+  height: 100vh;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  position:fixed;
+  transition: opacity 0.3s ease;
+}
+
+.overlay {
+  background: rgba(49,49,49,0.8);
+  transition: opacity 0.3s ease;
+}
+
+.modal-content {
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  line-height:1.4;
+  background:#f1f1f1;
+  padding:0px 0px;
+  border-radius:3px;
+  max-width:600px;
+  max-height:500px;
+  transition: opacity 0.3s ease;
+}
+
+.close-modal {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 7px;
+  transition: opacity 0.3s ease;
+}
+
+.main {
+  position:fixed;
+  transition: opacity 0.3s ease;
+}
+
+
+/* ADD USER */
+
+.header {
+  margin:auto;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+}
+
+.add-btn {
+  margin-top : 20px;
+}
+
+.close-btn {
+  margin-top:0;
+  float:right;
+  background-color: transparent;
+  cursor:pointer;
+  border:0px solid #b7b7b750;
+  padding:1px 0px;
+  margin-top:-25px;
+  border-radius:3px;
+  position:sticky;
+  color:#313131;
+}
+
+.cover-add{
+  transition: opacity 0.3s ease;
+}
+
+.modal {
+  transition: opacity 0.3s ease;
+}
