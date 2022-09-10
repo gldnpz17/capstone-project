@@ -19,7 +19,7 @@ function LoginForm() {
 
                 <ThemeProvider theme={theme} >
                     <Grid>
-                        <Card style={{ maxWidth: 450, padding: "20px 5px", margin: "0 auto" }}>
+                        <Card style={{ maxWidth: 450, padding: "2px 5px", margin: "0 auto" }}>
                         <CardContent>
                         <div class="header">
                             <Typography gutterBottom variant="h5" align="center" style={{ fontWeight: 600 }} color="#333333">
