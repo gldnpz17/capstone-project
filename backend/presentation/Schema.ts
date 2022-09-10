@@ -1,6 +1,25 @@
 import { ApolloServer, gql } from 'apollo-server'
 
 const typeDefs = gql`
+  type EnumClaimTypeOption {
+    id: Int
+    value: String
+  }
+
+  type ClaimType {
+    id: Int
+    name: String
+    dataType: String
+    options: [EnumClaimTypeOption]
+    claims: [ClaimInstance]
+  }
+
+  type ClaimInstance {
+    id: Int
+    type: ClaimType
+    account: Account
+  }
+
   type AdminPrivilegePreset {
     id: ID
     name: String
@@ -13,15 +32,28 @@ const typeDefs = gql`
   type Account {
     id: ID
     username: String
-    adminPrivilegePreset: AdminPrivilegePreset
+    privilegePreset: AdminPrivilegePreset
+    claims: [ClaimInstance]
+  }
+
+  type PasswordAuthenticationResult {
+    secondFactorToken: String
+  }
+
+  type SecondFactorAuthenticationResult {
+    refreshToken: String
   }
 
   type Query {
     accounts: [Account]
+    adminPrivilegePresets: [AdminPrivilegePreset]
+    claimTypes: [ClaimType]
   }
 
   type Mutation {
     createAccount: Account
+    #authenticatePassword(username: String, password: String): PasswordAuthenticationResult
+    #authenticateSecondFactor(secondFactorToken: String, totp: String): SecondFactorAuthenticationResult
   }
 `
 

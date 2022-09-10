@@ -23,7 +23,8 @@ class ApolloGraphqlServer {
         },
         Mutation: {
           ...this.spreadResolvers(resolvers => resolvers.getMutationResolvers())
-        }
+        },
+        ...this.spreadResolvers(resolvers => resolvers.getTypeResolvers())
       }
     })
 
