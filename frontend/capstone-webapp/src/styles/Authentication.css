@@ -1,7 +1,18 @@
 .header {
-    margin-bottom: 25px;
+    margin:auto;
+    padding:10x;
 }
 
 .auth-btn {
-    margin-top : 20px;
+    height:50px;
+}
+
+.desc {
+    font-size: 12px;
+    padding: 0px 25px;
+    font-weight: light;
+}
+
+.btn {
+    margin-top : 10px;
 }

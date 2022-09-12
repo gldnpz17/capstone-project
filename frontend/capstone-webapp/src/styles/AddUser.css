@@ -1,0 +1,27 @@
+.btn-confirm {
+    height:100%;
+  }
+
+.btn-save {
+    height:50px;
+}
+
+img {
+    display: flex;
+    margin:auto;
+    text-align: center;
+    align-items: center;
+}
+
+.header2 {
+    margin: 10px auto;
+    
+}
+
+.btn {
+    margin-top : 10px;
+}
+
+.btn-save:hover {
+    background-color: green;
+}

@@ -6,6 +6,11 @@ import { ThemeProvider, createTheme } from '@mui/material/styles'
 function LoginForm() {
 
         const theme = createTheme({
+
+            palette: {
+                primary: {
+                 main: "#5572c7"}
+              },
             typography: {
               fontFamily: [
                 'Poppins',
@@ -19,15 +24,14 @@ function LoginForm() {
 
                 <ThemeProvider theme={theme} >
                     <Grid>
-                        <Card style={{ maxWidth: 450, padding: "20px 5px", margin: "0 auto" }}>
+                        <Card style={{ maxWidth: 450, padding: "2px 5px", margin: "0 auto" }}>
                         <CardContent>
-                        <div class="header">
+                        <div className="header">
                             <Typography gutterBottom variant="h5" align="center" style={{ fontWeight: 600 }} color="#333333">
                                 Login
                             </Typography> 
                         </div>
-                        
-        
+                    
                             
                             <Grid container spacing={1}>
         
@@ -45,10 +49,10 @@ function LoginForm() {
                             </Grid>
 
                             
-                            <div class="login-btn">
+                            <div className="btn">
                                 <Grid>
                                     <Grid item xs={12}>
-                                        <Button type="submit" /*onClick={}*/ variant="outlined" color="primary" value="" style={{ backgroundColor: '#5572c7', color: '#FFFFFF', textTransform: 'none'}} fullWidth>
+                                        <Button className="login-btn" type="submit" /*onClick={}*/ variant="contained" color="primary" value="" style={{textTransform: 'none'}} fullWidth>
                                             <Typography style={{ fontWeight: 500 }}>Login</Typography></Button>
                                     </Grid>
                                 </Grid>
