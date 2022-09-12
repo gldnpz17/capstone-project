@@ -1,7 +1,17 @@
-import { DataTypes, Model, ModelStatic, Sequelize } from 'sequelize'
+import { DataTypes, Model, ModelStatic, Sequelize, HasMany, BelongsTo } from 'sequelize'
+
+type AssociationTypes = HasMany | BelongsTo
+
+class SequelizeAssociation {
+  constructor(
+    public propertyName: string,
+    public association: AssociationTypes
+  ) { }
+}
 
 abstract class SequelizeInstance {
   private sequelize: Sequelize
+  private associations: Record<string, SequelizeAssociation[]> = {}
   
   public static modelNames = {
     account: 'Account',
@@ -13,6 +23,12 @@ abstract class SequelizeInstance {
 
   public static getId(modelName: string) {
     return modelName + 'Id'
+  }
+
+  private registerAssociation(modelName: string, propertyName: string, association: AssociationTypes) {
+    if (!this.associations[modelName]) this.associations[modelName] = []
+
+    this.associations[modelName].push(new SequelizeAssociation(propertyName, association))
   }
 
   constructor() {
@@ -94,27 +110,59 @@ abstract class SequelizeInstance {
       enumValue: DataTypes.STRING
     })
 
-    AdminPrivileges.hasMany(Account, {
-      foreignKey: {
-        allowNull: false
-      }
-    })
-    Account.belongsTo(AdminPrivileges)
+    this.registerAssociation(
+      SequelizeInstance.modelNames.adminPrivilegePreset,
+      'accounts',
+      AdminPrivileges.hasMany(Account, {
+        foreignKey: {
+          allowNull: false
+        }
+      })
+    )
+    this.registerAssociation(
+      SequelizeInstance.modelNames.account,
+      'privilegePreset',
+      Account.belongsTo(AdminPrivileges)
+    )
 
-    Account.hasMany(ClaimInstance, { 
-      foreignKey: { 
-        allowNull: false 
-      } 
-    })
-    ClaimInstance.belongsTo(Account)
+    this.registerAssociation(
+      SequelizeInstance.modelNames.account,
+      'claims',
+      Account.hasMany(ClaimInstance, { 
+        foreignKey: { 
+          allowNull: false 
+        } 
+      })
+    )
+    this.registerAssociation(
+      SequelizeInstance.modelNames.claimInstance,
+      'account',
+      ClaimInstance.belongsTo(Account)
+    )
 
-    ClaimType.hasMany(EnumClaimTypeOption)
-    EnumClaimTypeOption.belongsTo(ClaimType)
+    this.registerAssociation(
+      SequelizeInstance.modelNames.claimType,
+      'options',
+      ClaimType.hasMany(EnumClaimTypeOption)
+    )
+    this.registerAssociation(
+      SequelizeInstance.modelNames.enumClaimTypeOption,
+      'type',
+      EnumClaimTypeOption.belongsTo(ClaimType)
+    )
 
-    ClaimType.hasMany(ClaimInstance, {
-      onDelete: 'CASCADE'
-    })
-    ClaimInstance.belongsTo(ClaimType)
+    this.registerAssociation(
+      SequelizeInstance.modelNames.claimType,
+      'claims',
+      ClaimType.hasMany(ClaimInstance, {
+        onDelete: 'CASCADE'
+      })
+    )
+    this.registerAssociation(
+      SequelizeInstance.modelNames.claimInstance,
+      'type',
+      ClaimInstance.belongsTo(ClaimType)
+    )
 
     await this.sequelize.sync()
 
@@ -139,9 +187,13 @@ abstract class SequelizeInstance {
   public getModel(modelName: string) {
     return this.sequelize.models[modelName]
   }
+
+  public getAssociations(modelName: string): SequelizeAssociation[] {
+    return this.associations[modelName]
+  }
 }
 
-class InMemorySqliteSequelizeInstance extends SequelizeInstance{
+class InMemorySqliteSequelizeInstance extends SequelizeInstance {
   protected getSequelize(): Sequelize {
     return new Sequelize('sqlite::memory')
   }
