@@ -51,14 +51,24 @@ const AccManagement = () =>  {
                 </thead>
                 <tbody>
                   <tr>
-                    <td>A</td>
+                    <td>
+                      <select name="claimtype" id="claimtype">
+                        <option value="Fakultas">Fakultas</option>
+                        <option value="Fakultas">Jurusan</option>
+                      </select>
+                      </td>
                     <td>Value</td>
                     <td>
                     <button type="button" class="act-btn del-btn"><i class="fa fa-trash"></i></button>
                     </td>
                   </tr>
                   <tr>
-                    <td>B</td>
+                    <td>
+                      <select name="claimtype" id="claimtype">
+                        <option value="Fakultas">Fakultas</option>
+                        <option value="Fakultas">Jurusan</option>
+                      </select>
+                    </td>
                     <td>Value</td>
                     <td>
                     <button type="button" class="act-btn del-btn"><i class="fa fa-trash"></i></button>

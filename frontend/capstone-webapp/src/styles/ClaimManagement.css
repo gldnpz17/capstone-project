@@ -245,3 +245,8 @@
     line-height: 0px;
     font-size: 14px;
 }
+
+select {
+  border:none;
+  background-color: transparent;
+}

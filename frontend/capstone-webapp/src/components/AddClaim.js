@@ -1,7 +1,8 @@
 import React from "react";
-import "../styles/EditClaim.css";
+import "../styles/AddClaim.css";
 import { MenuItem, Button, CardContent, Typography, Card, Grid, TextField } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
+import { display } from "@mui/system";
 
 
 const DataType = [
@@ -25,10 +26,7 @@ const DataType = [
 
 function AddClaim() {
 
-
-
     const [datatypeselect, setDataType] = React.useState('str');
-
 
     const handleChange = (event) => {
       setDataType(event.target.value);
@@ -48,7 +46,9 @@ function AddClaim() {
 
     return(
 
+
             <div className="cover-claim">
+
                 <ThemeProvider theme={theme} >
                     <Grid>
                         <Card style={{ maxWidth: 450, padding: "2px 5px", margin: "0 auto" }}>
@@ -69,11 +69,11 @@ function AddClaim() {
                                     {option.label}
                                   </MenuItem>
                                 ))}
+                                
                               </TextField>
                           </Grid>
-
                           
-                      <div className="option-expand">
+                      <div className="option-expand" id="OptionExpand">
                         <Grid container>
 
                           <Grid item xs={12}>
@@ -94,7 +94,7 @@ function AddClaim() {
                             </div>
                           </Grid>
 
-                          </Grid>
+                        </Grid>
 
                         <Grid container spacing={1} style={{ marginTop:10 }}>
                           <Grid item xs={8}>
@@ -107,16 +107,25 @@ function AddClaim() {
                             <Typography style={{ fontWeight: 500 }}>Add</Typography></Button>
                           </Grid>
                         </Grid>
+                        
                       </div>
+
                         </Grid>
                         </CardContent>
                         </Card>
                     </Grid>
                 </ThemeProvider>
+
+                <script>
+                  document.getElementById("OptionExpand").style.display = "none";
+                </script>
             </div>
-              
 
             );
+
+  
     }
+
+    
             
 export default AddClaim;
