@@ -54,14 +54,14 @@ const AccManagement = () =>  {
                     <td>A</td>
                     <td>Value</td>
                     <td>
-                      <button type="button" class="act-btn edit-btn"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="act-btn del-btn"><i class="fa fa-trash"></i></button>
                     </td>
                   </tr>
                   <tr>
                     <td>B</td>
                     <td>Value</td>
                     <td>
-                      <button type="button" class="act-btn edit-btn"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="act-btn del-btn"><i class="fa fa-trash"></i></button>
                     </td>
                   </tr>
                 </tbody>
