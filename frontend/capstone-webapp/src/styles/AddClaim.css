@@ -7,15 +7,20 @@
 
 .claim-data {
     padding-left:10px;
-    display: flex;
+    display: inline-block;
     align-items: center;
     width: 100%;
     justify-content: center;
 }
 
+.claim-name {
+    line-height: 10px;
+}
+
 .claim-data button {
     float: right;
     width:50px;
+    margin-top: 10px;
 }
 
 
