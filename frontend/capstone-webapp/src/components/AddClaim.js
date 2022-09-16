@@ -77,7 +77,7 @@ function AddClaim() {
                         <Grid container>
 
                           <Grid item xs={12}>
-                            <Typography gutterBottom align="center" style={{ fontWeight: 400, marginTop: 20, }} color="#333333">Options : </Typography>
+                            <Typography gutterBottom align="center" style={{ fontWeight: 400, marginTop: 20, marginBottom: 10 }} color="#333333">Options : </Typography>
                           </Grid>
 
                           <Grid container spacing={1}>
