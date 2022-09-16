@@ -1,0 +1,20 @@
+.claim-data p {
+    float:left;
+    margin-right:20px;
+}
+
+
+
+.claim-data {
+    padding-left:10px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: center;
+}
+
+.claim-data button {
+    float: right;
+    width:50px;
+}
+
