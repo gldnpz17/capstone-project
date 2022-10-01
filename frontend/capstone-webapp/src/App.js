@@ -5,12 +5,14 @@ import Authority from './pages/Authority'
 import AddUser from './components/AddUser'
 import AddClaim from './components/AddClaim'
 import ClaimManagement from './pages/ClaimManagement'
+import SmartLockList from './pages/SmartLockList'
 import './App.css';
+import AccessLog from './pages/AccessLog.js';
 
 function App() {
   return (
     <div className="page">
-      <ClaimManagement/>
+      <SmartLockList/>
     </div>
   );
 }

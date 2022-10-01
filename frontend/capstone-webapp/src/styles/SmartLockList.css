@@ -1,0 +1,65 @@
+.cover-smartlocklist {
+    width: 42.4vw;
+    
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+}
+
+.header {
+    padding-bottom:10px;
+}
+
+.fa-edit {
+    color: white;
+    margin:2px;
+}
+
+.fa-lock {
+    padding-right:10px;
+}
+
+.fa-list {
+    color:white;
+    margin:2px;
+}
+
+.edit-btn {
+    background-color: rgb(249, 204, 57);
+    border-radius:5px;
+    transition: 0.3s;
+}
+
+.edit-btn:hover {
+    background-color: rgb(214, 169, 22);
+    border-radius:5px;
+    transition: 0.3s;
+}
+
+.list-btn {
+    background-color: rgb(91, 219, 77);
+    border-radius:5px;
+    transition: 0.3s;
+}
+
+.list-btn:hover {
+    background-color: rgb(44, 151, 32);
+    border-radius:5px;
+    transition: 0.3s;
+}
+
+.grid-addlock {
+    display: flex;
+    padding: 10px 10px 20px 10px;
+    border: 0.1rem dashed #dedede;
+    border-radius: 8px;
+    margin:auto;
+    margin-bottom:20px;
+}
+
+.desc-addlock {
+    padding-left: 25px;
+    padding-right : 10px;
+    
+}
+
