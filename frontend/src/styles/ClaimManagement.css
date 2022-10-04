@@ -7,14 +7,14 @@
     align-items: center;
     text-align: center;
     margin:auto;
-    margin-bottom : 40px;
+    margin-top : 40px;
   }
 
   .content-table {
     border-collapse: collapse;
     margin: 25px 0;
     font-size: 14px;
-    min-width: 60vw;
+    min-width: 50vw;
     border-radius: 5px 5px 0 0;
     overflow: hidden;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
@@ -167,7 +167,7 @@
   background:#f1f1f1;
   padding:0px 0px;
   border-radius:3px;
-  max-width:600px;
+  max-width:800px;
 
   transition: opacity 0.3s ease;
 }
@@ -233,4 +233,20 @@
 
 .modal {
   transition: opacity 0.3s ease;
+}
+
+.username-field {
+    
+    display: flex;
+    flex-direction: column;
+}
+
+.user-field {
+    line-height: 0px;
+    font-size: 14px;
+}
+
+select {
+  border:none;
+  background-color: transparent;
 }

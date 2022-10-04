@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../styles/AccManagement.css';
+import '../styles/Authority.css';
 import AddUser from '../components/AddUser.js';
 import { Button, Typography, Grid, createTheme,ThemeProvider } from '@mui/material';
 
@@ -45,16 +45,14 @@ const AccManagement = () =>  {
                 <thead>
                   <tr>
                     <th>Username</th>
-                    <th>Authority</th>
-                    <th>Claims</th>
+                    <th>Authorities</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>A</td>
-                    <td>Authority</td>
-                    <td>Claim</td>
+                    <td>Authority1, Authority2</td>
                     <td>
                       <button type="button" class="act-btn edit-btn"><i class="fas fa-edit"></i></button>
                       <button type="button" class="act-btn del-btn"><i class="fa fa-trash"></i></button>
@@ -62,8 +60,7 @@ const AccManagement = () =>  {
                   </tr>
                   <tr>
                     <td>B</td>
-                    <td>Authority</td>
-                    <td>Claim</td>
+                    <td>Authority1, Authority2</td>
                     <td>
                       <button type="button" class="act-btn edit-btn"><i class="fas fa-edit"></i></button>
                       <button type="button" class="act-btn del-btn"><i class="fa fa-trash"></i></button>

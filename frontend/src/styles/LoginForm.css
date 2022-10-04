@@ -1,7 +1,12 @@
 .header {
-    margin-bottom: 25px;
+    margin:auto;
+    padding:1px;
 }
 
 .login-btn {
-    margin-top : 20px;
+    height:50px;
+}
+
+.btn {
+    margin-top : 10px;
 }
