@@ -17,7 +17,7 @@ class PasswordAuthenticationResult {
 
 class SecondFactorAuthenticationResult {
   constructor(
-    public authenticationToken: string
+    public refreshToken: string
   ) { }
 }
 

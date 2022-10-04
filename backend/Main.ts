@@ -148,7 +148,7 @@ async function testClaims(claimTypeUseCases: ClaimTypeUseCases, accountUseCases:
 
 async function main() {
   const config = new ApplicationConfiguration(
-    'loremipsum',
+    'somesecret',
     [
       new AdminPrivilege(
         AdminPrivilegeNames.canManageAccounts,
@@ -227,7 +227,7 @@ async function main() {
     value: 'Medicine'
   })
 
-  const aliceTotpSecret = accountUseCases.getTotpSecret()
+  const aliceTotpSecret = "OZEEUWBQBBNSYLQE"
   const aliceToken = authenticator.generate(aliceTotpSecret)
   const alice = await accountUseCases.register({ 
     username: 'alice123', 
@@ -251,7 +251,7 @@ async function main() {
   await new ApolloGraphqlServer(
     [
       new SequelizeReadResolvers(inMemoryDb),
-      new AccountResolvers(inMemoryDb)
+      new AccountResolvers(accountUseCases)
     ],
     typeDefs
   )

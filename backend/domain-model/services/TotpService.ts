@@ -9,7 +9,7 @@ interface TotpService {
 
 class OtplibTotpService implements TotpService {
   generateRandomSecret(): string {
-    return base32.stringify(Buffer.from(randomBytes(32)))
+    return authenticator.generateSecret()
   }
   
   async totpIsValid(sharedSecret: string, totp: string): Promise<boolean> {

@@ -51,9 +51,8 @@ const typeDefs = gql`
   }
 
   type Mutation {
-    createAccount: Account
-    #authenticatePassword(username: String, password: String): PasswordAuthenticationResult
-    #authenticateSecondFactor(secondFactorToken: String, totp: String): SecondFactorAuthenticationResult
+    authenticatePassword(username: String, password: String): PasswordAuthenticationResult
+    authenticateSecondFactor(secondFactorToken: String, totp: String): SecondFactorAuthenticationResult
   }
 `
 
