@@ -96,7 +96,7 @@ class AccountUseCases {
 
     if (!account || !account.totp) throw new NotImplementedError()
 
-    if (!this.totpService.totpIsValid(account.totp.totpSharedSecret, credentials.totp)) 
+    if (!await this.totpService.totpIsValid(account.totp.totpSharedSecret, credentials.totp)) 
       throw new NotImplementedError()
 
     const token = await this.authenticationTokenService.generateToken(new AuthenticationToken(account), token => token.account.id)
