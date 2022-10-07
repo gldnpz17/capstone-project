@@ -17,6 +17,7 @@ function App() {
                     <Routes>
                         <Route path="/admin">
                             <Route path="login" element={<LoginForm />} />
+                            <Route path="accounts" element={<AccManagement />} />
                         </Route>
                     </Routes>
                 </BrowserRouter>

@@ -3,7 +3,7 @@ import "../styles/LoginForm.css";
 import { Button, CardContent, Typography, Card, Grid, TextField } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { useMutation } from "@apollo/client";
-import { AUTHENTICATE_PASSWORD, AUTHENTICATE_SECOND_FACTOR } from "../queries/accounts";
+import { AUTHENTICATE_PASSWORD, AUTHENTICATE_SECOND_FACTOR } from "../queries/Accounts";
 
 const handleForm = (handle, fieldNames) => (e) => {
     e.preventDefault()

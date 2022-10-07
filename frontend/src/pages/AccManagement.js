@@ -73,22 +73,19 @@ const AccManagement = () =>  {
           </table>     
 
         {modal && (
-        <div className="modal">
-          <div className="overlay">
-            <div className="modal-content">
-               <AddUser/>
-               <div>
-                <button className="btn-cancel" onClick={toggleModal} style={{ textTransform: 'none'}}><p>Cancel</p></button>
-               </div>
+          <div className="modal">
+            <div className="overlay">
+              <div className="modal-content">
+                <AddUser/>
+                <div>
+                  <button className="btn-cancel" onClick={toggleModal} style={{ textTransform: 'none'}}><p>Cancel</p></button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
         )}
-        </div>
-
+      </div>
     )
-
-
 }
 
 export default AccManagement

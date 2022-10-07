@@ -20,6 +20,7 @@ import { ApolloGraphqlServer } from './presentation/Server';
 import { AccountResolvers } from './presentation/resolvers/AccountResolvers';
 import { typeDefs } from './presentation/Schema';
 import { SequelizeReadResolvers } from './presentation/resolvers/SequelizeReadResolvers';
+import { TotpUtilitiesResolvers } from './presentation/resolvers/TotpUtilitiesResolvers';
 
 async function testAccounts(useCase: AccountUseCases) {
   const aliceTotpSecret = useCase.getTotpSecret()
@@ -251,7 +252,8 @@ async function main() {
   await new ApolloGraphqlServer(
     [
       new SequelizeReadResolvers(inMemoryDb),
-      new AccountResolvers(accountUseCases)
+      new AccountResolvers(accountUseCases),
+      new TotpUtilitiesResolvers(accountUseCases)
     ],
     typeDefs
   )

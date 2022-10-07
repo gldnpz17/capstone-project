@@ -44,7 +44,12 @@ const typeDefs = gql`
     refreshToken: String
   }
 
+  type TotpUtilities {
+    generateSecret: String
+  }
+
   type Query {
+    totp: TotpUtilities
     accounts: [Account]
     adminPrivilegePresets: [AdminPrivilegePreset]
     claimTypes: [ClaimType]
