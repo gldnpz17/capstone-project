@@ -16,7 +16,39 @@ const AUTHENTICATE_SECOND_FACTOR = gql`
   }
 `
 
+const READ_ALL_ACCOUNTS = gql`
+  query ReadAllAccounts {
+    accounts {
+      id
+      username
+      privilegePreset {
+        id
+        name
+      }
+      claims {
+        id
+        type {
+          id
+          name
+        }
+        value
+      }
+    }
+  }
+`
+
+const READ_ALL_CLAIM_TYPES = gql`
+  query ReadAllClaimTypes {
+    claimTypes {
+      id
+      name
+    }
+  }
+`
+
 export { 
   AUTHENTICATE_PASSWORD, 
-  AUTHENTICATE_SECOND_FACTOR 
+  AUTHENTICATE_SECOND_FACTOR,
+  READ_ALL_ACCOUNTS,
+  READ_ALL_CLAIM_TYPES
 }
