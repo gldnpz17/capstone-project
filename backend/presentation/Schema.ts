@@ -1,5 +1,8 @@
 import { ApolloServer, gql } from 'apollo-server'
 
+const collectionArgs = (keyParams: { type?: 'String' | 'Int' | undefined, name?: String } = { type: 'Int', name: 'Id' }) => 
+  `${keyParams?.name ?? 'id'}: ${keyParams?.type ?? 'Int'}, where: String, limit: Int`
+
 const typeDefs = gql`
   type EnumClaimTypeOption {
     id: Int
@@ -18,6 +21,7 @@ const typeDefs = gql`
     id: Int
     type: ClaimType
     account: Account
+    value: String
   }
 
   type AdminPrivilegePreset {
@@ -50,12 +54,16 @@ const typeDefs = gql`
 
   type Query {
     totp: TotpUtilities
-    accounts: [Account]
+    accounts(${collectionArgs({ type: 'String' })}): [Account]
     adminPrivilegePresets: [AdminPrivilegePreset]
     claimTypes: [ClaimType]
   }
 
   type Mutation {
+    registerAccount(username: String, password: String, privilegeId: Int): Account
+    addClaimToAccount(accountId: String, typeId: Int, value: String): ClaimInstance
+    updateClaim(id: Int, value: String): ClaimInstance
+    deleteClaim(id: Int): ClaimInstance
     authenticatePassword(username: String, password: String): PasswordAuthenticationResult
     authenticateSecondFactor(secondFactorToken: String, totp: String): SecondFactorAuthenticationResult
   }

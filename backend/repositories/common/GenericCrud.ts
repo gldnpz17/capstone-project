@@ -1,4 +1,4 @@
-import { Model, ModelStatic } from "sequelize/types"
+import { FindOptions, Model, ModelStatic } from "sequelize/types"
 import { EntityMapperBase } from "./RepositoryMapper"
 
 interface GenericReadAllConfig {
@@ -14,10 +14,16 @@ interface GenericCrud<TEntity> {
   delete(id: number | string): Promise<TEntity | undefined>
 }
 
+type QueryOptions = Omit<FindOptions<any>, "where"> | undefined
+
 class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
   constructor(
     private model: ModelStatic<Model<any, any>>,
-    private mapper: EntityMapperBase<TEntity>
+    private mapper: EntityMapperBase<TEntity>,
+    private options: { 
+      updateOptions: QueryOptions,
+      deleteOptions: QueryOptions 
+    } = { updateOptions: undefined, deleteOptions: undefined }
   ) {  }
 
   create = async (instance: any): Promise<TEntity> => 
@@ -37,15 +43,15 @@ class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
     this.mapper.map((await this.model.findByPk(id))?.toJSON()).get() 
 
   update = async (id: number | string, instance: any): Promise<TEntity | undefined> => {
-    const modelInstance = await this.model.findByPk(id)
-    await modelInstance?.update(instance)
+    const modelInstance = await this.model.findByPk(id, this.options.updateOptions)
+    await modelInstance?.update(instance, this.options.updateOptions)
     const entity = modelInstance?.toJSON()
 
     return this.mapper.map(entity).get()
   }
 
   delete = async (id: number | string): Promise<TEntity | undefined> => {
-    const modelInstance = await this.model.findByPk(id)
+    const modelInstance = await this.model.findByPk(id, this.options.deleteOptions)
     const entity = modelInstance?.toJSON()
     
     await modelInstance?.destroy()

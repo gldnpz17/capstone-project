@@ -32,15 +32,11 @@ async function testAccounts(useCase: AccountUseCases) {
   const alice = await useCase.register({ 
     username: 'alice123', 
     password: 'hunter02', 
-    totpSharedSecret: aliceTotpSecret,
-    verificationTotp: aliceToken,
     privilegeId: 1
   })
   const bob = await useCase.register({ 
     username: 'bob456', 
     password: 'password123',
-    totpSharedSecret: bobTotpSecret,
-    verificationTotp: bobToken,
     privilegeId: 1
   })
 
@@ -86,8 +82,6 @@ async function testPrivileges(useCases: AdminPrivilegeUseCases, accountUseCases:
   const alice = await accountUseCases.register({
     username: 'alice',
     password: 'hunter02',
-    totpSharedSecret: aliceSecret,
-    verificationTotp: aliceToken,
     privilegeId: 4
   })
 
@@ -107,8 +101,6 @@ async function testClaims(claimTypeUseCases: ClaimTypeUseCases, accountUseCases:
   const alice = await accountUseCases.register({ 
     username: 'alice123', 
     password: 'hunter02', 
-    totpSharedSecret: aliceTotpSecret,
-    verificationTotp: aliceToken,
     privilegeId: 2
   })
 
@@ -166,7 +158,8 @@ async function main() {
 
   const inMemoryDb = await new InMemorySqliteSequelizeInstance().initialize()
 
-  const claimInstanceMapper = new ClaimInstanceMapper()
+  const claimTypeMapper = new ClaimTypeMapper()
+  const claimInstanceMapper = new ClaimInstanceMapper(claimTypeMapper)
   const accountMapper = new AccountMapper(
     new PasswordCredentialMapper(), 
     new TotpCredentialMapper(),
@@ -179,7 +172,7 @@ async function main() {
 
   const claimTypesRepository = new SequelizeClaimTypesRepository(
     inMemoryDb,
-    new ClaimTypeMapper()
+    claimTypeMapper
   )
 
   const accountUseCases = new AccountUseCases(
@@ -214,6 +207,7 @@ async function main() {
 
   const name = await claimTypeUseCases.create({ name: 'Name', dataType: 'string' })
   const department = await claimTypeUseCases.create({ name: 'Department', dataType: 'enum' })
+  const age = await claimTypeUseCases.create({ name: 'Age', dataType: 'number' })
 
   await claimTypeUseCases.addEnumClaimTypeOption({ 
     claimTypeId: department.id,
@@ -232,10 +226,14 @@ async function main() {
   const aliceToken = authenticator.generate(aliceTotpSecret)
   const alice = await accountUseCases.register({ 
     username: 'alice123', 
-    password: 'hunter02', 
-    totpSharedSecret: aliceTotpSecret,
-    verificationTotp: aliceToken,
+    password: 'hunter02',
     privilegeId: 2
+  })
+
+  const bob = await accountUseCases.register({ 
+    username: 'bobbers', 
+    password: 'iambob',
+    privilegeId: 1
   })
 
   await accountUseCases.addClaim({
@@ -247,6 +245,11 @@ async function main() {
     typeId: department.id,
     accountId: alice.id,
     value: medicineOption.value
+  })
+  await accountUseCases.addClaim({
+    typeId: age.id,
+    accountId: bob.id,
+    value: 23
   })
 
   await new ApolloGraphqlServer(

@@ -136,8 +136,24 @@ class EnumClaimTypeOptionsMapper extends EntityMapperBase<EnumClaimTypeOption> {
   }
 }
 
+class ClaimInstanceExtender extends BaseExtender<ClaimInstanceUnion> {
+  constructor(
+    item: ClaimInstanceUnion,
+    private claimTypeMapper: ClaimTypeMapper
+  ) { super(item) }
+
+  addType(type: ClaimType) {
+    this.item.type = this.claimTypeMapper.map(type).get()
+    return this
+  }
+}
+
 class ClaimInstanceMapper extends EntityMapperBase<ClaimInstanceUnion> {
-  override map(original: any): BaseExtender<ClaimInstanceUnion> {
+  constructor(
+    private claimTypeMapper: ClaimTypeMapper
+  ) { super() }
+
+  override map(original: any): ClaimInstanceExtender {
     const { id } = original
     const type: ClaimType = original.ClaimType
     const value = original[`${type.dataType}Value`]
@@ -160,7 +176,7 @@ class ClaimInstanceMapper extends EntityMapperBase<ClaimInstanceUnion> {
         throw new NotImplementedError()
     }
 
-    return new BaseExtender(claim)
+    return new ClaimInstanceExtender(claim, this.claimTypeMapper)
   }
 }
 

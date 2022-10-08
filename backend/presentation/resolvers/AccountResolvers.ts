@@ -9,12 +9,12 @@ class AccountResolvers extends ResolversBase {
 
   override getMutationResolvers(): object {
     return {
-      authenticatePassword: async (_: any, args: { username: string, password: string }) => {
-        return await this.accountUseCases.authenticatePassword(args)
-      },
-      authenticateSecondFactor: async (_: any, args: { secondFactorToken: string, totp: string }) => {
-        return await this.accountUseCases.authenticateSecondFactor(args)
-      }
+      registerAccount: this.mapUseCase(this.accountUseCases.register),
+      authenticatePassword: this.mapUseCase(this.accountUseCases.authenticatePassword),
+      authenticateSecondFactor: this.mapUseCase(this.accountUseCases.authenticateSecondFactor),
+      addClaimToAccount: this.mapUseCase(this.accountUseCases.addClaim),
+      updateClaim: this.mapUseCase(this.accountUseCases.updateClaim, { spread: true }),
+      deleteClaim: this.mapUseCase(this.accountUseCases.deleteClaim, { spread: true })
     }
   }
 }

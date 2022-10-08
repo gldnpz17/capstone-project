@@ -1,5 +1,6 @@
 import { NotImplementedError } from '../common/Errors'
 import { Account } from '../domain-model/entities/Account'
+import { ClaimInstance } from '../domain-model/entities/ClaimInstance'
 import { ClaimType } from '../domain-model/entities/ClaimType'
 import { PasswordService } from '../domain-model/services/PasswordService'
 import { TotpService } from '../domain-model/services/TotpService'
@@ -54,18 +55,15 @@ class AccountUseCases {
     private claimInstancesRepository: ClaimInstancesRepository
   ) { }
 
-  async register(account: { username: string, password: string, totpSharedSecret: string, verificationTotp: string, privilegeId: number }): Promise<Account> {
+  async register(account: { username: string, password: string, privilegeId: number }): Promise<Account> {
     const { salt, hash } = this.passwordService.hash(account.password)
 
-    if (!this.totpService.totpIsValid(account.totpSharedSecret, account.password)) throw new NotImplementedError()
-
-    const { username, totpSharedSecret, privilegeId } = account
+    const { username, privilegeId } = account
 
     return await this.accountsRepository.create({ 
       username,
       salt, 
-      hash, 
-      totpSharedSecret,
+      hash,
       privilegeId
     })
   }
@@ -106,7 +104,13 @@ class AccountUseCases {
 
   addClaim = this.claimInstancesRepository.create
 
-  updateClaim = this.claimInstancesRepository.update
+  updateClaim = async (id: number, value: string): Promise<ClaimInstance | undefined> => {
+    const claimInstance = await this.claimInstancesRepository.readByIdIncludeType(id)
+
+    return await this.claimInstancesRepository.update(id , {
+      [`${claimInstance.type.dataType}Value`]: value
+    })
+  }
 
   deleteClaim = this.claimInstancesRepository.delete
 

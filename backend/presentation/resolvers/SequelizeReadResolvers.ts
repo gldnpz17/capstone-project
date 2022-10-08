@@ -9,9 +9,7 @@ class SequelizeReadResolvers extends ResolversBase {
   constructor(private db: SequelizeInstance) { super() }
 
   private getResolver(entity: any, list: boolean = true): Function {
-    return resolver(entity, {
-      list
-    })
+    return resolver(entity, { list })
   }
 
   private formatModelName(name: string): string {
@@ -28,20 +26,25 @@ class SequelizeReadResolvers extends ResolversBase {
     return resolvers
   }
 
-  private getAssociationResolvers(modelNameObject: any): object {
+  private getAssociationResolvers(modelName: string): object {
+    return this.db
+      .getAssociations(modelName)
+      .map(({ propertyName, association }) => ({
+        property: propertyName,
+        resolver: this.getResolver(association, association instanceof HasMany) 
+      }))
+      .reduce((obj: any, { property, resolver }) => ({
+        ...obj,
+        [property]: resolver
+      }), {})
+  }
+
+
+  private getModelTypeResolvers(modelNameObject: object): object {
     const resolvers: any = {}
     for (const key in modelNameObject) {
       const modelName = modelNameObject[key]
-      resolvers[modelName] = this.db
-        .getAssociations(modelName)
-        .map(({ propertyName, association }) => ({
-          property: propertyName,
-          resolver: this.getResolver(association, association instanceof HasMany) 
-        }))
-        .reduce((obj: any, { property, resolver }) => ({
-          ...obj,
-          [property]: resolver
-        }), {})
+      resolvers[modelName] = this.getAssociationResolvers(modelName)
     }
 
     return resolvers
@@ -60,7 +63,17 @@ class SequelizeReadResolvers extends ResolversBase {
     const { account, adminPrivilegePreset, claimType, claimInstance } = SequelizeInstance.modelNames
 
     return ({
-      ...this.getAssociationResolvers({ account, adminPrivilegePreset, claimType, claimInstance }),
+      ...this.getModelTypeResolvers({ account, adminPrivilegePreset, claimType }),
+      [claimInstance]: {
+        ...this.getAssociationResolvers(claimInstance),
+        value: (parent: any) => {
+          if (parent.value) return parent.value
+
+          const valueTypes = ['string', 'boolean', 'number', 'enum']
+          const values = valueTypes.map(valueType => parent[`${valueType}Value`])
+          return values.find(value => value != null)
+        }
+      }
     })
   }
 }

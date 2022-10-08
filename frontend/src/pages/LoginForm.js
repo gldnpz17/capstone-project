@@ -4,18 +4,7 @@ import { Button, CardContent, Typography, Card, Grid, TextField } from '@mui/mat
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { useMutation } from "@apollo/client";
 import { AUTHENTICATE_PASSWORD, AUTHENTICATE_SECOND_FACTOR } from "../queries/Accounts";
-
-const handleForm = (handle, fieldNames) => (e) => {
-    e.preventDefault()
-
-    const handlerArgs = fieldNames.reduce(
-        (obj, name) => {
-            return { ...obj, [name]: e.target[name].value }
-        }, {}
-    )
-
-    handle(handlerArgs)
-}
+import { handleForm } from "../common/handleForm";
 
 const FirstFactorForm = ({ setSecondFactorToken }) => {
     const [authenticatePassword, { data }] = useMutation(AUTHENTICATE_PASSWORD)

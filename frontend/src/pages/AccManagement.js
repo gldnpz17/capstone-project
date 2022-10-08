@@ -4,10 +4,13 @@ import AddUser from '../components/AddUser.js';
 import { Button, Typography, Grid, createTheme,ThemeProvider } from '@mui/material';
 import { useQuery } from '@apollo/client';
 import { READ_ALL_ACCOUNTS, READ_ALL_CLAIM_TYPES } from '../queries/Accounts';
+import { useModal } from '../hooks/useModal';
+import EditUser from '../components/EditUser';
 
 const AccountsTableRow = ({ 
-    account: { username, privilegePreset, claims },
-    claimTypes
+    account: { id, username, privilegePreset, claims },
+    claimTypes,
+    openEditUserModal
 }) => (
     <tr>
         <td>{username}</td>
@@ -16,46 +19,49 @@ const AccountsTableRow = ({
             <td>{claims.find(claim => claim.type.id === type.id)?.value ?? "-" }</td>
         ))}
         <td>
-            <button type="button" class="act-btn edit-btn"><i class="fas fa-edit"></i></button>
-            <button type="button" class="act-btn del-btn"><i class="fa fa-trash"></i></button>
+            <button 
+                type="button" class="act-btn edit-btn" 
+                onClick={openEditUserModal({ accountId: id })}
+            >
+                <i class="fas fa-edit"></i>
+            </button>
+            <button type="button" class="act-btn del-btn">
+                <i class="fa fa-trash"></i>
+            </button>
         </td>
     </tr>
 )
 
 const AccManagement = () =>  {
-  const [modal, setModal] = useState(false);
 
-  const {
-    data: { accounts } = { accounts: [] },
-    loading: accountsLoading
-  } = useQuery(READ_ALL_ACCOUNTS)
+    const {
+        data: { accounts } = { accounts: [] },
+        loading: accountsLoading
+    } = useQuery(READ_ALL_ACCOUNTS)
 
-  const {
-    data: { claimTypes } = { claimTypes: [] },
-    loading: claimTypesLoading
-  } = useQuery(READ_ALL_CLAIM_TYPES)
+    const {
+        data: { claimTypes } = { claimTypes: [] },
+        loading: claimTypesLoading
+    } = useQuery(READ_ALL_CLAIM_TYPES)
 
-  const toggleModal = () => {
-    setModal(!modal)
-  }
+    const [AddUserModal, openAddUserModal] = useModal(AddUser)
+    const [EditUserModal, openEditUserModal] = useModal(EditUser)
 
-  const theme = createTheme({
-
-    palette: {
-      primary: {
-        main: "#5572c7"},
-      secondary: {
-        main: "#db4d4d"
-      }
-    },
-    typography: {
-      fontFamily: [
-        'Poppins',
-        'sans-serif',
-      ].join(','),
-    },});
-
-    console.log(claimTypes)
+    const theme = createTheme({
+        palette: {
+            primary: {
+                main: "#5572c7"},
+            secondary: {
+                main: "#db4d4d"
+            }
+        },
+        typography: {
+            fontFamily: [
+                'Poppins',
+                'sans-serif',
+            ].join(','),
+        },
+    });
 
     return (
         <div class="main">
@@ -63,7 +69,7 @@ const AccManagement = () =>  {
                 <ThemeProvider theme={theme} >
                     <Grid>
                         <Grid item xs={12}>
-                            <Button type="submit" onClick={toggleModal} variant="contained" color="primary" value="" style={{ textTransform: 'none'}}>
+                            <Button type="submit" onClick={openAddUserModal()} variant="contained" color="primary" value="" style={{ textTransform: 'none'}}>
                                 <Typography style={{ fontWeight: 500 }}>Add User</Typography>
                             </Button>
                         </Grid>
@@ -87,25 +93,16 @@ const AccManagement = () =>  {
                         {accounts.map(account => (
                             <AccountsTableRow 
                                 account={account}
-                                claimTypes={claimTypes} 
+                                claimTypes={claimTypes}
+                                openEditUserModal={openEditUserModal}
                             />
                         ))}
                     </tbody>
                 </table>    
             )} 
 
-            {modal && (
-                <div className="modal">
-                    <div className="overlay">
-                    <div className="modal-content">
-                        <AddUser/>
-                        <div>
-                            <button className="btn-cancel" onClick={toggleModal} style={{ textTransform: 'none'}}><p>Cancel</p></button>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-            )}
+            <AddUserModal />
+            <EditUserModal />
         </div>
     )
 }

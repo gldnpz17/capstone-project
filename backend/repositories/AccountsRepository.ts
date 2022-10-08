@@ -8,7 +8,7 @@ import { SequelizeInstance } from "./common/SequelizeModels";
 import { AdminPrivilege } from "../domain-model/common/ApplicationConfiguration";
 
 interface AccountsRepository {
-  create(account: { username: string, salt: string, hash: string, totpSharedSecret: string, privilegeId: number }): Promise<Account>
+  create(account: { username: string, salt: string, hash: string, privilegeId: number }): Promise<Account>
   readAll(config: GenericReadAllConfig): Promise<Account[]>
   readById(id: string): Promise<Account | undefined>
   readByIdIncludeClaims(id: string): Promise<Account | undefined>
@@ -48,17 +48,15 @@ class SequelizeAccountsRepository implements AccountsRepository {
       username: string, 
       salt: string, 
       hash: string, 
-      totpSharedSecret: string, 
       privilegeId: number 
     }) => {
 
-    const { username, salt, hash, totpSharedSecret, privilegeId } = account
+    const { username, salt, hash, privilegeId } = account
     
     const newAccount: any = this.accountModel.build({
       username,
       salt,
       hash,
-      totpSharedSecret,
       [`${SequelizeInstance.modelNames.adminPrivilegePreset}Id`]: privilegeId
     })
 

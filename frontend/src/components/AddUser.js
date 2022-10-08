@@ -2,16 +2,32 @@ import React, { useEffect, useMemo, useState } from "react";
 import "../styles/AddUser.css";
 import { Button, CardContent, Typography, Card, Grid, TextField, Select, MenuItem, Box } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { useQuery } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { GENERATE_TOTP_SECRET, READ_ALL_ADMIN_PRIVILEGE_PRESETS } from "../queries/AdminPrivilegePresets";
 import QRCode from 'qrcode'
 import { Stack } from "@mui/system";
+import { READ_ALL_ACCOUNTS, REGISTER_ACCOUNT } from "../queries/Accounts";
+import { handleForm } from "../common/handleForm";
 
 function LoginForm() {
     const { 
         data: { adminPrivilegePresets } = {}, 
         loading: privilegePresetsLoading 
     } = useQuery(READ_ALL_ADMIN_PRIVILEGE_PRESETS)
+
+    const [registerAccount] = useMutation(REGISTER_ACCOUNT, {
+        refetchQueries: [ { query: READ_ALL_ACCOUNTS } ]
+    })
+
+    const handleSubmit = handleForm(async ({ username, password, privilegeId }) => {
+        registerAccount({ 
+            variables: { 
+                username,
+                password,
+                privilegeId: Number.parseInt(privilegeId)
+            } 
+        })
+    }, ["username", "password", "privilegeId"])
     
     const theme = createTheme({
         palette: {
@@ -40,7 +56,7 @@ function LoginForm() {
                                 </div>
                             </Grid>
                     
-                            <form /*onSubmit={}*/>
+                            <form onSubmit={handleSubmit}>
                                 <Grid container spacing={1}>
                                     <Grid item xs={12}>
                                         <TextField id="" name="username" placeholder="Enter Username" label="Username" variant="outlined" fullWidth required />
@@ -51,7 +67,7 @@ function LoginForm() {
                                     </Grid>
 
                                     <Grid item xs={12}>
-                                        <TextField name="privilege" select placeholder="Choose Authority" label="Privilege" variant="outlined" fullWidth required>
+                                        <TextField name="privilegeId" select placeholder="Choose Authority" label="Privilege" variant="outlined" fullWidth required>
                                             {privilegePresetsLoading
                                                 ? (
                                                     <MenuItem disabled>Loading Privileges...</MenuItem>

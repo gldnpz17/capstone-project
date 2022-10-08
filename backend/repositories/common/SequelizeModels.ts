@@ -21,6 +21,10 @@ abstract class SequelizeInstance {
     enumClaimTypeOption: 'EnumClaimTypeOption'
   }
 
+  private static compositeUniques = {
+    accountClaimType: 'AccountClaimType'
+  }
+
   public static getId(modelName: string) {
     return modelName + 'Id'
   }
@@ -56,10 +60,7 @@ abstract class SequelizeInstance {
         type: DataTypes.STRING,
         allowNull: false
       },
-      totpSharedSecret: {
-        type: DataTypes.STRING,
-        allowNull: false
-      }
+      totpSharedSecret: DataTypes.STRING
     })
 
     const AdminPrivileges = this.sequelize.define(SequelizeInstance.modelNames.adminPrivilegePreset, {
@@ -104,6 +105,23 @@ abstract class SequelizeInstance {
     })
 
     const ClaimInstance = this.sequelize.define(SequelizeInstance.modelNames.claimInstance, {
+      [SequelizeInstance.getId(SequelizeInstance.modelNames.account)]: {
+        type: DataTypes.UUIDV4,
+        references: {
+          model: Account,
+          key: 'id'
+        },
+        unique: SequelizeInstance.compositeUniques.accountClaimType
+      },
+      [SequelizeInstance.getId(SequelizeInstance.modelNames.claimType)]: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: ClaimType,
+          key: 'id'
+        },
+        unique: SequelizeInstance.compositeUniques.accountClaimType
+      },
+      // TODO: Fix this stupidity. Just use a single string column and change the data type in the repository.
       stringValue: DataTypes.STRING,
       numberValue: DataTypes.DOUBLE,
       booleanValue: DataTypes.BOOLEAN,
@@ -129,9 +147,9 @@ abstract class SequelizeInstance {
       SequelizeInstance.modelNames.account,
       'claims',
       Account.hasMany(ClaimInstance, { 
-        foreignKey: { 
-          allowNull: false 
-        } 
+        foreignKey: {
+          allowNull: false
+        }
       })
     )
     this.registerAssociation(

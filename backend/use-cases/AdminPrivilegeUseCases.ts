@@ -46,8 +46,6 @@ class AdminPrivilegeUseCases {
     if (privilege?.accounts) {
       const endUserPreset = await this.privilegesRepository.readEndUserPreset()
 
-      console.log('privv', privilege, endUserPreset)
-
       await Promise.all(privilege.accounts.map(async account => {
         await this.accountsRepository.updateAdminPrivilege(account.id, endUserPreset.id)
       }))
