@@ -22,7 +22,7 @@ const useModal = (Content) => {
                         <div className="modal-content">
                             <Content {...modalArgs} />
                             <div>
-                                <button className="btn-cancel" onClick={close} style={{ textTransform: 'none'}}><p>Cancel</p></button>
+                                <button className="btn-cancel" onClick={close} style={{ textTransform: 'none'}}><p>Close</p></button>
                             </div>
                         </div>
                     </div>

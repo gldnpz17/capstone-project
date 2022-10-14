@@ -8,6 +8,8 @@ const handleForm = (handle, fieldNames) => (e) => {
   )
 
   handle(handlerArgs)
+
+  e.target.reset()
 }
 
 export { handleForm }

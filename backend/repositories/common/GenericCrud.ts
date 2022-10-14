@@ -22,8 +22,8 @@ class SequelizeGenericCrud<TEntity> implements GenericCrud<TEntity> {
     private mapper: EntityMapperBase<TEntity>,
     private options: { 
       updateOptions: QueryOptions,
-      deleteOptions: QueryOptions 
-    } = { updateOptions: undefined, deleteOptions: undefined }
+      deleteOptions: QueryOptions
+    } = { updateOptions: undefined, deleteOptions: undefined } // TODO: Provide default values.
   ) {  }
 
   create = async (instance: any): Promise<TEntity> => 

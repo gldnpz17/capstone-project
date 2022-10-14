@@ -1,6 +1,6 @@
 import { BelongsTo, HasMany } from "sequelize"
 import { SequelizeInstance } from "../../repositories/common/SequelizeModels"
-import { ResolversBase } from "./AccountResolvers"
+import { ResolversBase } from "./common/ResolversBase"
 
 const graphqlSequelize = require('graphql-sequelize')
 const resolver: any = graphqlSequelize.resolver
@@ -38,7 +38,6 @@ class SequelizeReadResolvers extends ResolversBase {
         [property]: resolver
       }), {})
   }
-
 
   private getModelTypeResolvers(modelNameObject: object): object {
     const resolvers: any = {}

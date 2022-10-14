@@ -21,91 +21,16 @@ import { AccountResolvers } from './presentation/resolvers/AccountResolvers';
 import { typeDefs } from './presentation/Schema';
 import { SequelizeReadResolvers } from './presentation/resolvers/SequelizeReadResolvers';
 import { TotpUtilitiesResolvers } from './presentation/resolvers/TotpUtilitiesResolvers';
+import { ClaimTypeResolvers } from './presentation/resolvers/ClaimTypeResolvers';
 
-async function testAccounts(useCase: AccountUseCases) {
-  const aliceTotpSecret = useCase.getTotpSecret()
-  const bobTotpSecret = useCase.getTotpSecret()
+async function initDatabase(
+  claimTypeUseCases: ClaimTypeUseCases,
+  accountUseCases: AccountUseCases,
 
-  const aliceToken = authenticator.generate(aliceTotpSecret)
-  const bobToken = authenticator.generate(bobTotpSecret)
-
-  const alice = await useCase.register({ 
-    username: 'alice123', 
-    password: 'hunter02', 
-    privilegeId: 1
-  })
-  const bob = await useCase.register({ 
-    username: 'bob456', 
-    password: 'password123',
-    privilegeId: 1
-  })
-
-  console.log('bob id :', bob.id)
-
-  const accounts = await useCase.readAll({ start: 0 })
-
-  console.log('accounts :', accounts)
-
-  const aliceQueried = await useCase.readById(alice.id)
-
-  console.log('alice queried :', aliceQueried)
-
-  const deletedBob = await useCase.delete(bob.id)
-  const accountsRequery = await useCase.readAll({})
-
-  console.log('deleted bob :', deletedBob)
-  console.log('accounts requery :', accountsRequery)
-
-  const firstFactorResult = await useCase.authenticatePassword({ username: 'alice123', password: 'hunter02' })
-  console.log('First factor result : ', firstFactorResult)
-
-  const aliceNewToken = authenticator.generate(aliceTotpSecret)
-  const secondFactorResult = await useCase.authenticateSecondFactor({ 
-    secondFactorToken: firstFactorResult.secondFactorToken, 
-    totp: aliceNewToken 
-  })
-
-  console.log('Second factor result :', secondFactorResult)
-}
-
-async function testPrivileges(useCases: AdminPrivilegeUseCases, accountUseCases: AccountUseCases) {
-  console.log('Available privileges : ', useCases.readAvailablePrivileges())
-
-  console.log('Preset A :', await useCases.create({ name: 'Preset A', canManageAccounts: true, canManageLocks: true }))
-  console.log('Preset B :', await useCases.create({ name: 'Preset B', canManageAccounts: false, canManageLocks: true }))
-
-  console.log('Read by ID :', await useCases.readById(1))
-  console.log('Read All :', await useCases.readAll({}))
-
-  const aliceSecret = accountUseCases.getTotpSecret()
-  const aliceToken = authenticator.generate(aliceSecret)
-  const alice = await accountUseCases.register({
-    username: 'alice',
-    password: 'hunter02',
-    privilegeId: 4
-  })
-
-  console.log('Alice privilege before :', await useCases.readByAccountId(alice.id))
-
-  console.log('Updated B :', await useCases.update(4, { canManageAccounts: false, canManageLocks: false }))
-
-  console.log('Deleted B :', await useCases.delete(4))
-  console.log('Read All :', await useCases.readAll({}))
-
-  console.log('Alice privilege after :', await useCases.readByAccountId(alice.id))
-}
-
-async function testClaims(claimTypeUseCases: ClaimTypeUseCases, accountUseCases: AccountUseCases) {
-  const aliceTotpSecret = accountUseCases.getTotpSecret()
-  const aliceToken = authenticator.generate(aliceTotpSecret)
-  const alice = await accountUseCases.register({ 
-    username: 'alice123', 
-    password: 'hunter02', 
-    privilegeId: 2
-  })
-
-  const name = await claimTypeUseCases.create({ name: 'Name', dataType: 'string' })
-  const department = await claimTypeUseCases.create({ name: 'Department', dataType: 'enum' })
+) {
+  const name = await claimTypeUseCases.create({ name: 'Name', dataType: 'string', options: [] })
+  const department = await claimTypeUseCases.create({ name: 'Department', dataType: 'enum', options: [] })
+  const age = await claimTypeUseCases.create({ name: 'Age', dataType: 'number', options: [] })
 
   await claimTypeUseCases.addEnumClaimTypeOption({ 
     claimTypeId: department.id,
@@ -120,6 +45,20 @@ async function testClaims(claimTypeUseCases: ClaimTypeUseCases, accountUseCases:
     value: 'Medicine'
   })
 
+  const aliceTotpSecret = "OZEEUWBQBBNSYLQE"
+  const aliceToken = authenticator.generate(aliceTotpSecret)
+  const alice = await accountUseCases.register({ 
+    username: 'alice123', 
+    password: 'hunter02',
+    privilegeId: 2
+  })
+
+  const bob = await accountUseCases.register({ 
+    username: 'bobbers', 
+    password: 'iambob',
+    privilegeId: 1
+  })
+
   await accountUseCases.addClaim({
     typeId: name.id,
     accountId: alice.id,
@@ -130,13 +69,12 @@ async function testClaims(claimTypeUseCases: ClaimTypeUseCases, accountUseCases:
     accountId: alice.id,
     value: medicineOption.value
   })
+  await accountUseCases.addClaim({
+    typeId: age.id,
+    accountId: bob.id,
+    value: 23
+  })
 
-  console.log('All claim types :', await claimTypeUseCases.readAll({}))
-  console.log('Department options :', await claimTypeUseCases.readAllEnumClaimTypeOptions(department.id))
-
-  await claimTypeUseCases.delete(department.id)
-
-  console.log('All alice claims :', await accountUseCases.readByIdIncludeClaims(alice.id))
 }
 
 async function main() {
@@ -205,57 +143,13 @@ async function main() {
     )
   )
 
-  const name = await claimTypeUseCases.create({ name: 'Name', dataType: 'string' })
-  const department = await claimTypeUseCases.create({ name: 'Department', dataType: 'enum' })
-  const age = await claimTypeUseCases.create({ name: 'Age', dataType: 'number' })
-
-  await claimTypeUseCases.addEnumClaimTypeOption({ 
-    claimTypeId: department.id,
-    value: 'Engineering'
-  })
-  await claimTypeUseCases.addEnumClaimTypeOption({ 
-    claimTypeId: department.id,
-    value: 'Law'
-  })
-  const medicineOption = await claimTypeUseCases.addEnumClaimTypeOption({ 
-    claimTypeId: department.id,
-    value: 'Medicine'
-  })
-
-  const aliceTotpSecret = "OZEEUWBQBBNSYLQE"
-  const aliceToken = authenticator.generate(aliceTotpSecret)
-  const alice = await accountUseCases.register({ 
-    username: 'alice123', 
-    password: 'hunter02',
-    privilegeId: 2
-  })
-
-  const bob = await accountUseCases.register({ 
-    username: 'bobbers', 
-    password: 'iambob',
-    privilegeId: 1
-  })
-
-  await accountUseCases.addClaim({
-    typeId: name.id,
-    accountId: alice.id,
-    value: 'Alice Soedirman'
-  })
-  await accountUseCases.addClaim({
-    typeId: department.id,
-    accountId: alice.id,
-    value: medicineOption.value
-  })
-  await accountUseCases.addClaim({
-    typeId: age.id,
-    accountId: bob.id,
-    value: 23
-  })
+  await initDatabase(claimTypeUseCases, accountUseCases)
 
   await new ApolloGraphqlServer(
     [
       new SequelizeReadResolvers(inMemoryDb),
       new AccountResolvers(accountUseCases),
+      new ClaimTypeResolvers(claimTypeUseCases),
       new TotpUtilitiesResolvers(accountUseCases)
     ],
     typeDefs

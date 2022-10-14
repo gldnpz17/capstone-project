@@ -55,7 +55,7 @@ class AccountUseCases {
     private claimInstancesRepository: ClaimInstancesRepository
   ) { }
 
-  async register(account: { username: string, password: string, privilegeId: number }): Promise<Account> {
+  register = async (account: { username: string, password: string, privilegeId: number }): Promise<Account> => {
     const { salt, hash } = this.passwordService.hash(account.password)
 
     const { username, privilegeId } = account
@@ -68,11 +68,11 @@ class AccountUseCases {
     })
   }
 
-  getTotpSecret() {
+  getTotpSecret = () => {
     return this.totpService.generateRandomSecret()
   }
 
-  async authenticatePassword(credentials: { username: string, password: string }): Promise<PasswordAuthenticationResult> {
+  authenticatePassword = async (credentials: { username: string, password: string }): Promise<PasswordAuthenticationResult> => {
     const account = await this.accountsRepository.readByUsernameWithPassword(credentials.username)
 
     if (!account || !account.password) 
@@ -87,7 +87,7 @@ class AccountUseCases {
     return new PasswordAuthenticationResult(token)
   }
 
-  async authenticateSecondFactor(credentials: { secondFactorToken: string, totp: string }) {
+  authenticateSecondFactor = async (credentials: { secondFactorToken: string, totp: string }) => {
     const { account: { id } } = await this.secondFactorTokenService.decodeToken(credentials.secondFactorToken)
 
     const account = await this.accountsRepository.readByIdIncludeTotp(id)
@@ -116,17 +116,11 @@ class AccountUseCases {
 
   readByIdIncludeClaims = this.accountsRepository.readByIdIncludeClaims
 
-  async readAll(config: GenericReadAllConfig): Promise<Account[]> {
-    return await this.accountsRepository.readAll(config)
-  }
+  readAll = this.accountsRepository.readAll
 
-  async readById(id: string): Promise<Account | undefined> {
-    return await this.accountsRepository.readById(id)
-  }
+  readById = this.accountsRepository.readById
 
-  async delete(id: string): Promise<Account | undefined> {
-    return await this.accountsRepository.delete(id)
-  }
+  delete = this.accountsRepository.delete
 }
 
 export { AccountUseCases, SecondFactorToken, AuthenticationToken }

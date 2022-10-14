@@ -10,6 +10,7 @@ class AccountResolvers extends ResolversBase {
   override getMutationResolvers(): object {
     return {
       registerAccount: this.mapUseCase(this.accountUseCases.register),
+      deleteAccount: this.mapUseCase(this.accountUseCases.delete, { spread: true }),
       authenticatePassword: this.mapUseCase(this.accountUseCases.authenticatePassword),
       authenticateSecondFactor: this.mapUseCase(this.accountUseCases.authenticateSecondFactor),
       addClaimToAccount: this.mapUseCase(this.accountUseCases.addClaim),
@@ -19,4 +20,4 @@ class AccountResolvers extends ResolversBase {
   }
 }
 
-export { ResolversBase, AccountResolvers }
+export { AccountResolvers }

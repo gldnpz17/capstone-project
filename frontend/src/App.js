@@ -3,6 +3,7 @@ import AccManagement from './pages/AccManagement'
 import { BrowserRouter, createBrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css';
 import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
+import { createTheme, ThemeProvider } from '@mui/material';
 
 const graphqlClient = new ApolloClient({
     uri: "http://localhost:4000",
@@ -10,17 +11,29 @@ const graphqlClient = new ApolloClient({
 })
 
 function App() {
+    const theme = createTheme({
+        props: {
+            smallFormField: {
+                size: "small", 
+                variant: "outlined", 
+                fullWidth: true, 
+            }
+        }
+    })
+
     return (
         <div className="page">
             <ApolloProvider client={graphqlClient}>
-                <BrowserRouter>
-                    <Routes>
-                        <Route path="/admin">
-                            <Route path="login" element={<LoginForm />} />
-                            <Route path="accounts" element={<AccManagement />} />
-                        </Route>
-                    </Routes>
-                </BrowserRouter>
+                <ThemeProvider theme={theme}>
+                    <BrowserRouter>
+                        <Routes>
+                            <Route path="/admin">
+                                <Route path="login" element={<LoginForm />} />
+                                <Route path="accounts" element={<AccManagement />} />
+                            </Route>
+                        </Routes>
+                    </BrowserRouter>
+                </ThemeProvider>
             </ApolloProvider>
         </div>
     );

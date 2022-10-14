@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import '../styles/AccManagement.css';
 import AddUser from '../components/AddUser.js';
 import { Button, Typography, Grid, createTheme,ThemeProvider } from '@mui/material';
-import { useQuery } from '@apollo/client';
-import { READ_ALL_ACCOUNTS, READ_ALL_CLAIM_TYPES } from '../queries/Accounts';
+import { useMutation, useQuery } from '@apollo/client';
+import { DELETE_ACCOUNT, READ_ALL_ACCOUNTS, READ_ALL_CLAIM_TYPES } from '../queries/Accounts';
 import { useModal } from '../hooks/useModal';
 import EditUser from '../components/EditUser';
 
@@ -11,26 +11,33 @@ const AccountsTableRow = ({
     account: { id, username, privilegePreset, claims },
     claimTypes,
     openEditUserModal
-}) => (
-    <tr>
-        <td>{username}</td>
-        <td>{privilegePreset.name}</td>
-        {claimTypes.map(type => (
-            <td>{claims.find(claim => claim.type.id === type.id)?.value ?? "-" }</td>
-        ))}
-        <td>
-            <button 
-                type="button" class="act-btn edit-btn" 
-                onClick={openEditUserModal({ accountId: id })}
-            >
-                <i class="fas fa-edit"></i>
-            </button>
-            <button type="button" class="act-btn del-btn">
-                <i class="fa fa-trash"></i>
-            </button>
-        </td>
-    </tr>
-)
+}) => {
+    const [deleteAccount] = useMutation(DELETE_ACCOUNT, { 
+        variables: { id },
+        refetchQueries: [ { query: READ_ALL_ACCOUNTS } ]
+    })
+
+    return (
+        <tr>
+            <td>{username}</td>
+            <td>{privilegePreset.name}</td>
+            {claimTypes.map(type => (
+                <td>{claims.find(claim => claim.type.id === type.id)?.value ?? "-" }</td>
+            ))}
+            <td>
+                <button 
+                    type="button" class="act-btn edit-btn" 
+                    onClick={openEditUserModal({ accountId: id })}
+                >
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="act-btn del-btn" onClick={() => deleteAccount()}>
+                    <i class="fa fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    )
+}
 
 const AccManagement = () =>  {
 

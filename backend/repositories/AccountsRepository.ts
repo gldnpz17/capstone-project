@@ -49,7 +49,8 @@ class SequelizeAccountsRepository implements AccountsRepository {
       salt: string, 
       hash: string, 
       privilegeId: number 
-    }) => {
+    }
+  ) => {
 
     const { username, salt, hash, privilegeId } = account
     
@@ -69,7 +70,7 @@ class SequelizeAccountsRepository implements AccountsRepository {
 
   readById = this.accountCrud.readById
   
-  async readByUsernameWithPassword(username: string): Promise<Account | undefined> {
+  readByUsernameWithPassword = async (username: string): Promise<Account | undefined> => {
     const instance = (await this.accountModel.findOne({ where: { username } }))?.toJSON()
 
     if (!instance) throw new NotImplementedError()
@@ -77,7 +78,7 @@ class SequelizeAccountsRepository implements AccountsRepository {
     return this.mapper.map(instance).addPassword(instance).get()
   }
 
-  async readByIdIncludeTotp(id: string): Promise<Account | undefined> {
+  readByIdIncludeTotp = async (id: string): Promise<Account | undefined> => {
     const instance = (await this.accountModel.findByPk(id))?.toJSON()
 
     if (!instance) throw new NotImplementedError()
@@ -85,7 +86,7 @@ class SequelizeAccountsRepository implements AccountsRepository {
     return this.mapper.map(instance).addTotp(instance).get()
   }
 
-  async updateAdminPrivilege(accountId: string, privilegeId: number): Promise<Account | undefined> {
+  updateAdminPrivilege = async (accountId: string, privilegeId: number): Promise<Account | undefined> => {
     return await this.accountCrud.update(accountId, { 
       [`${SequelizeInstance.modelNames.adminPrivilegePreset}Id`]: privilegeId
     })

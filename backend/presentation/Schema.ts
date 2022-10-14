@@ -1,7 +1,7 @@
 import { ApolloServer, gql } from 'apollo-server'
 
-const collectionArgs = (keyParams: { type?: 'String' | 'Int' | undefined, name?: String } = { type: 'Int', name: 'Id' }) => 
-  `${keyParams?.name ?? 'id'}: ${keyParams?.type ?? 'Int'}, where: String, limit: Int`
+const collectionArgs = (keyParams: { keyType?: 'String' | 'Int' | undefined, name?: String } = { keyType: 'Int', name: 'Id' }) => 
+  `${keyParams?.name ?? 'id'}: ${keyParams?.keyType ?? 'Int'}, where: String, limit: Int`
 
 const typeDefs = gql`
   type EnumClaimTypeOption {
@@ -54,18 +54,30 @@ const typeDefs = gql`
 
   type Query {
     totp: TotpUtilities
-    accounts(${collectionArgs({ type: 'String' })}): [Account]
+    accounts(${collectionArgs({ keyType: 'String' })}): [Account]
     adminPrivilegePresets: [AdminPrivilegePreset]
-    claimTypes: [ClaimType]
+    claimTypes(${collectionArgs({ keyType: 'Int' })}): [ClaimType]
+  }
+
+  enum CLAIM_TYPE_DATA_TYPE {
+    string
+    number
+    boolean
+    enum
   }
 
   type Mutation {
     registerAccount(username: String, password: String, privilegeId: Int): Account
+    deleteAccount(id: ID): Account
     addClaimToAccount(accountId: String, typeId: Int, value: String): ClaimInstance
     updateClaim(id: Int, value: String): ClaimInstance
     deleteClaim(id: Int): ClaimInstance
     authenticatePassword(username: String, password: String): PasswordAuthenticationResult
     authenticateSecondFactor(secondFactorToken: String, totp: String): SecondFactorAuthenticationResult
+    createClaimType(name: String, dataType: CLAIM_TYPE_DATA_TYPE, options: [String]): ClaimType
+    deleteClaimType(id: Int): ClaimType,
+    addEnumClaimTypeOption(claimTypeId: Int, value: String): EnumClaimTypeOption
+    deleteEnumClaimTypeOption(id: Int): EnumClaimTypeOption
   }
 `
 

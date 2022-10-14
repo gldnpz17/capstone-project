@@ -87,6 +87,7 @@ abstract class SequelizeInstance {
       name: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true
       },
       dataType: {
         type: DataTypes.ENUM('string', 'number', 'boolean', 'enum'),

@@ -1,5 +1,5 @@
 import { AccountUseCases } from "../../use-cases/AccountUseCases";
-import { ResolversBase } from "./AccountResolvers";
+import { ResolversBase } from "./common/ResolversBase";
 
 class TotpUtilitiesResolvers extends ResolversBase {
   constructor(

@@ -38,6 +38,7 @@ const READ_ALL_ACCOUNTS = gql`
         type {
           id
           name
+          dataType
         }
         value
       }
@@ -50,6 +51,7 @@ const READ_ALL_CLAIM_TYPES = gql`
     claimTypes {
       id
       name
+      dataType
     }
   }
 `
@@ -103,8 +105,17 @@ const DELETE_CLAIM = gql`
   }
 `
 
+const DELETE_ACCOUNT = gql`
+  mutation DeleteAccount($id: ID) {
+    deleteAccount(id: $id) {
+      id
+    }
+  }
+`
+
 export { 
   REGISTER_ACCOUNT,
+  DELETE_ACCOUNT,
   AUTHENTICATE_PASSWORD, 
   AUTHENTICATE_SECOND_FACTOR,
   READ_ALL_ACCOUNTS,

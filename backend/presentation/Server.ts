@@ -1,6 +1,6 @@
 import { ApolloServer } from 'apollo-server'
 import { DocumentNode } from 'graphql'
-import { ResolversBase } from './resolvers/AccountResolvers'
+import { ResolversBase } from './resolvers/common/ResolversBase'
 
 class ApolloGraphqlServer {
   constructor(
