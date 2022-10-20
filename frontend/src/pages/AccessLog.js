@@ -4,6 +4,7 @@ import "../styles/SmartLockList.css";
 import { DataGrid, GridToolbarQuickFilter } from '@mui/x-data-grid';
 import { Typography} from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
+import theme from '../components/UItheme';
 
 
 function QuickSearchToolbar() {
@@ -21,18 +22,6 @@ function QuickSearchToolbar() {
     );
   }
 
-const theme = createTheme({
-
-    palette: {
-        primary: {
-         main: "#5572c7"}
-      },
-    typography: {
-      fontFamily: [
-        'Poppins',
-        'sans-serif',
-      ].join(','),
-    },});
 
     const columns = [
         {
