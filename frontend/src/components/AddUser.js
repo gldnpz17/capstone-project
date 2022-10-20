@@ -8,6 +8,7 @@ import QRCode from 'qrcode'
 import { Stack } from "@mui/system";
 import { READ_ALL_ACCOUNTS, REGISTER_ACCOUNT } from "../queries/Accounts";
 import { handleForm } from "../common/handleForm";
+import theme from '../components/UItheme';
 
 function LoginForm() {
     const { 
@@ -28,19 +29,6 @@ function LoginForm() {
             } 
         })
     }, ["username", "password", "privilegeId"])
-    
-    const theme = createTheme({
-        palette: {
-            primary: {
-             main: "#5572c7"}
-          },
-        typography: {
-          fontFamily: [
-            'Poppins',
-            'sans-serif',
-          ].join(','),
-        },
-    });
 
     return(
         <div className="cover-add">

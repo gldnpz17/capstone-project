@@ -10,6 +10,7 @@ import { ADD_ENUM_OPTION, CREATE_CLAIM_TYPE, DELETE_CLAIM_TYPE, READ_CLAIM_TYPE_
 import { handleForm } from '../common/handleForm';
 import { Add } from '@mui/icons-material';
 import { usePopup } from '../hooks/usePopup';
+import theme from '../components/UItheme';
 
 const DataTypeButton = ({ selectedDataType, dataType, setSelectedDataType, label, disabled }) => (
     <Button size="small" onClick={() => setSelectedDataType(dataType)} disabled={disabled}

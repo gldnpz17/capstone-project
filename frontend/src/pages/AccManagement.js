@@ -6,6 +6,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import { DELETE_ACCOUNT, READ_ALL_ACCOUNTS, READ_ALL_CLAIM_TYPES } from '../queries/Accounts';
 import { useModal } from '../hooks/useModal';
 import EditUser from '../components/EditUser';
+import theme from '../components/UItheme';
 
 const AccountsTableRow = ({ 
     account: { id, username, privilegePreset, claims },
@@ -53,22 +54,6 @@ const AccManagement = () =>  {
 
     const [AddUserModal, openAddUserModal] = useModal(AddUser)
     const [EditUserModal, openEditUserModal] = useModal(EditUser)
-
-    const theme = createTheme({
-        palette: {
-            primary: {
-                main: "#5572c7"},
-            secondary: {
-                main: "#db4d4d"
-            }
-        },
-        typography: {
-            fontFamily: [
-                'Poppins',
-                'sans-serif',
-            ].join(','),
-        },
-    });
 
     return (
         <div class="main">

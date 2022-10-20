@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../styles/Authority.css';
 import AddUser from '../components/AddUser.js';
 import { Button, Typography, Grid, createTheme,ThemeProvider } from '@mui/material';
+import theme from '../components/UItheme';
 
 const AccManagement = () =>  {
 
@@ -10,22 +11,6 @@ const AccManagement = () =>  {
   const toggleModal = () => {
     setModal(!modal)
   }
-
-  const theme = createTheme({
-
-    palette: {
-      primary: {
-        main: "#5572c7"},
-      secondary: {
-        main: "#db4d4d"
-      }
-    },
-    typography: {
-      fontFamily: [
-        'Poppins',
-        'sans-serif',
-      ].join(','),
-    },});
 
     return (
         <div class="main">

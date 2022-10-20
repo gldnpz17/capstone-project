@@ -3,6 +3,7 @@ import "../styles/AddClaim.css";
 import { MenuItem, Button, CardContent, Typography, Card, Grid, TextField } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { display } from "@mui/system";
+import theme from '../components/UItheme';
 
 const DataType = [
   {
@@ -30,18 +31,6 @@ function AddClaim() {
     const handleChange = (event) => {
       setDataType(event.target.value);
     };
-
-    const theme = createTheme({
-        palette: {
-            primary: {
-             main: "#5572c7"}
-          },
-        typography: {
-          fontFamily: [
-            'Poppins',
-            'sans-serif',
-          ].join(','),
-        },});
 
     return(
 

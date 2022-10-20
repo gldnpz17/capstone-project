@@ -2,22 +2,10 @@ import React from "react";
 import "../styles/SmartLockSetting.css";
 import { Button, CardContent, Typography, Card, Grid, TextField } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
+import theme from '../components/UItheme';
 
 
 function SmartLockSetting() {
-
-
-    const theme = createTheme({
-        palette: {
-            primary: {
-             main: "#5572c7"}
-          },
-        typography: {
-          fontFamily: [
-            'Poppins',
-            'sans-serif',
-          ].join(','),
-        },});
 
     return(
 

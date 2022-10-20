@@ -5,6 +5,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { useMutation } from "@apollo/client";
 import { AUTHENTICATE_PASSWORD, AUTHENTICATE_SECOND_FACTOR } from "../queries/Accounts";
 import { handleForm } from "../common/handleForm";
+import theme from '../components/UItheme';
 
 const FirstFactorForm = ({ setSecondFactorToken }) => {
     const [authenticatePassword, { data }] = useMutation(AUTHENTICATE_PASSWORD)
@@ -98,14 +99,6 @@ const SecondFactorForm = ({ secondFactorToken }) => {
 }
 
 function LoginForm() {
-    const theme = createTheme({
-        typography: {
-            fontFamily: [
-            'Poppins',
-            'sans-serif',
-            ].join(','),
-        },
-    });
 
     const [secondFactorToken, setSecondFactorToken] = useState(null)
     
