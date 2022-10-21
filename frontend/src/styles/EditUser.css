@@ -1,14 +1,6 @@
 * {
     font-family: 'Poppins', sans-serif; /* Change your font family */
   }
-  
-  .add2-btn {
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    margin:auto;
-    margin-top : 40px;
-  }
 
   .edit-user-content-table {
     border-collapse: collapse;
@@ -36,12 +28,6 @@
   .edit-user-content-table tbody tr {
     border-bottom: 1px solid #dddddd;
   }
-  
-  /*
-  .edit-user-content-table tbody tr:nth-of-type(even) {
-    background-color: #f3f3f3;
-  }
-  */
   
   .edit-user-content-table tbody tr:last-of-type {
     border-bottom: 2px solid #5572c7;
@@ -75,165 +61,13 @@
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
   }
   
-  .add-btn:hover {
-    background-color: #293e7b;
-    transition: 0.3s;
-  }
-  
-  .add-btn:active {
-    transform: scale(0.8)
-  }
-
-  .act-btn {
-    margin: 0px 3px;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-    border:none;
-    cursor:pointer;
-  }
-
-  th {
-    text-align: center;
-  }
-
-  td {
-    text-align: center;
-  }
-
-.fa-edit {
-    color: white;
-    margin:2px;
+.add-btn:hover {
+  background-color: #293e7b;
+  transition: 0.3s;
 }
 
-.fa-trash {
-    color:white;
-    margin:2px;
-}
-
-.edit-btn {
-    background-color: rgb(249, 204, 57);
-    border-radius:5px;
-    transition: 0.3s;
-}
-
-.edit-btn:hover {
-    background-color: rgb(214, 169, 22);
-    border-radius:5px;
-    transition: 0.3s;
-}
-
-.del-btn {
-    background-color: rgb(219, 77, 77);
-    border-radius:5px;
-    transition: 0.3s;
-}
-
-.del-btn:hover {
-    background-color: rgb(167, 26, 26);
-    border-radius:5px;
-    transition: 0.3s;
-}
-
-.edit-btn:active {
-    transform: scale(0.8)
-  }
-
-.del-btn:active {
-    transform: scale(0.8)
-  }
-
-.modal, .overlay {
-  width: 100vw;
-  height: 100vh;
-  top:0;
-  left:0;
-  right:0;
-  bottom:0;
-  position:fixed;
-  transition: opacity 0.3s ease;
-}
-
-.overlay {
-  background: rgba(49,49,49,0.8);
-  transition: opacity 0.3s ease;
-}
-
-.modal-content {
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  line-height:1.4;
-  background:#f1f1f1;
-  padding:0px 0px;
-  border-radius:3px;
-  max-width:800px;
-
-  transition: opacity 0.3s ease;
-}
-
-/* .close-modal {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 5px 7px;
-  transition: opacity 0.3s ease;
-}
-
-*/
-
-.main {
-  position:fixed;
-  transition: opacity 0.3s ease;
-}
-
-
-.btn-cancel {
-  color:white;
-  background: transparent;
-  font-weight: 500;
-  display:flex;
-  width:30%;
-  height:40px;
-  text-align: center;
-  margin: 20px auto;
-  justify-content: center;
-  border:none;
-  border-radius: 5px;
-  align-items: center;
-  background-color: #db4d4d;
-  transition: 0.3s ease;
-}
-
-.btn-cancel:hover {
-  background-color: #b84040 ;
-  transition: 0.3s ease;
-}
-
-
-/* ADD USER */
-
-
-/* .close-btn {
-  margin-top:0;
-  float:right;
-  background-color: transparent;
-  cursor:pointer;
-  border:0px solid #b7b7b750;
-  padding:1px 0px;
-  margin-top:-25px;
-  border-radius:3px;
-  position:sticky;
-  color:#313131;
-} */
-
-.cover-add{
-  transition: opacity 0.3s ease;
-}
-
-.modal {
-  transition: opacity 0.3s ease;
+.add-btn:active {
+  transform: scale(0.8)
 }
 
 .username-field {

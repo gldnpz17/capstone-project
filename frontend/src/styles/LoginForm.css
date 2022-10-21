@@ -4,9 +4,10 @@
 }
 
 .login-btn {
+    margin-top:20px;
+}
+
+.login-btn Button {
     height:50px;
 }
 
-.btn {
-    margin-top : 10px;
-}

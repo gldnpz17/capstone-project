@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import '../styles/EditUser.css';
+import '../styles/Global.css';
 import AddClaim from './AddClaim.js'
 import { Button, Typography, Grid, createTheme,ThemeProvider, Card, CardContent, TextField, MenuItem, Popper, Fade, Paper, useTheme } from '@mui/material';
 import EditClaim from './AddClaim'

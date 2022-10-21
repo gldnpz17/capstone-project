@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../styles/AccManagement.css';
+import '../styles/Global.css';
 import AddUser from '../components/AddUser.js';
 import { Button, Typography, Grid, createTheme,ThemeProvider } from '@mui/material';
 import { useMutation, useQuery } from '@apollo/client';
