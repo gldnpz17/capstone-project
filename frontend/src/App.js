@@ -4,6 +4,7 @@ import { BrowserRouter, createBrowserRouter, Route, Routes } from 'react-router-
 import './App.css';
 import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
 import { createTheme, ThemeProvider } from '@mui/material';
+import { AuthorizationRuleEditor } from './pages/AuthorizationRuleEditor.js';
 
 const graphqlClient = new ApolloClient({
     uri: "http://localhost:4000",
@@ -30,6 +31,7 @@ function App() {
                             <Route path="/admin">
                                 <Route path="login" element={<LoginForm />} />
                                 <Route path="accounts" element={<AccManagement />} />
+                                <Route path="editor" element={<AuthorizationRuleEditor />} />
                             </Route>
                         </Routes>
                     </BrowserRouter>
