@@ -7,7 +7,7 @@ import { useForceRerender } from "../hooks/useForceRerender"
 import { FieldComponent } from "./FieldComponent"
 import { FrameComponent } from "./FrameComponent"
 
-const ListComponent = ({ instance = new FormList.Instance() }) => {
+const ListComponent = ({ instance }) => {
   useForceRerender(instance)
 
   if (!instance) return <div>Empty instance.</div>

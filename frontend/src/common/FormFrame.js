@@ -8,12 +8,12 @@ class FormFrame {
     this.name = name
     this.title = ""
 
-    const properties = this._getProperties(typeReference)
-    this.fields = this._getFields(properties)
-
-    this.instances = []
-    for (let name in this.fields) {
-      this._addField(name, this.fields[name])
+    try {
+      const properties = this._getProperties(typeReference)
+      this.fields = this._getFields(properties)
+    } catch(err) {
+      console.error(`Failed creating FormFrame ${name}.`)
+      console.error(err)
     }
   }
 
@@ -25,16 +25,6 @@ class FormFrame {
         const field = formFrame.fields[name]
         this.fieldInstances[name] = field.createInstance(this)
       }
-    }
-
-    _addField = (name) => {
-      this.fieldInstances[name] = this.template.fields[name].createInstance(this)
-      this._notifySubscribers()
-    }
-
-    _deleteField = (name) => {
-      delete this.fieldInstances[name]
-      this._notifySubscribers()
     }
 
     toObject = () => {
@@ -109,50 +99,9 @@ class FormFrame {
       }, {})
   }
 
-  _addField = (name, field) => {
-    this.fields[name] = field
-    this.instances.forEach(instance => instance._addField(name))
-  }
-
-  _deleteField = (name) => {
-    delete this.fields[name]
-    this.instances.forEach(instance => instance._deleteField(name))
-  }
-
   createInstance = (parent) => {
     const instance = new FormFrame.Instance(this, parent)
-    this.instances.push(instance)
     return instance
-  }
-
-  update = (typeReference) => {
-    const newProperties = this._getProperties(typeReference)
-    const newFields = this._getFields(newProperties)
-
-    for (const name in this.fields) {
-      // If the old field does not exist in the new version.
-      if (!newFields[name]) {
-        this._deleteField(name)
-      }
-
-      // If the old field is incompatible with the new version.
-      if (this.fields[name] && !this.fields[name].equals(newFields[name])) {
-        this._deleteField(name)
-      }
-    }
-
-    for (const name in newFields) {
-      // If the new field does not exist in the old version.
-      if (!this.fields[name]) {
-        this._addField(name, newFields[name])
-      }
-
-      // Update existing fields with new code.
-      if (this.fields[name]) {
-        const { astNode } = newProperties[name]
-        this.fields[name].update(astNode)
-      }
-    }
   }
 
   equals = (obj) => obj instanceof FormFrame && obj.name === this.name

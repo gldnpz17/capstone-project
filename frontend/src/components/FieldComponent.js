@@ -2,7 +2,7 @@ import { Checkbox, TextField } from "@mui/material"
 import { FormField } from "../common/FormField"
 import { useForceRerender } from "../hooks/useForceRerender"
 
-const FieldComponent = ({ instance = new FormField.Instance() }) => {
+const FieldComponent = ({ instance }) => {
   useForceRerender(instance)
 
   if (!instance) return <div>Empty instance.</div>

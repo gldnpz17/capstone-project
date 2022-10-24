@@ -66,8 +66,6 @@ class FormList {
     return { kind, astNode }
   }
 
-  update = (arrayType) => {} // I also don't know what to do here.
-
   createInstance = (parent) => new FormList.Instance(this, parent)
 
   equals = (formList) => formList.name === this.name && formList.itemType.equals(this.itemType)

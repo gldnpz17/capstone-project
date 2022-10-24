@@ -33,8 +33,6 @@ class FormField {
 
   createInstance = (parent) => new FormField.Instance(this, parent)
 
-  update = (dataType) => {} // idk what to do tbh. Maybe handle type conversion?
-
   equals = (formField) => formField.name === this.name && formField.dataType === this.dataType
 }
 
