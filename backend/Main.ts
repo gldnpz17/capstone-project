@@ -9,7 +9,7 @@ import { InMemorySqliteSequelizeInstance } from './repositories/common/Sequelize
 import { SequelizeTotpCredentialsRepository } from './repositories/TotpCredentialsRepository';
 import { AccountUseCases, AuthenticationToken, SecondFactorToken } from "./use-cases/AccountUseCases";
 import { authenticator } from 'otplib'
-import { AccountMapper, AdminPrivilegePresetMapper, ClaimInstanceMapper, ClaimTypeMapper, EnumClaimTypeOptionsMapper, PasswordCredentialMapper, TotpCredentialMapper } from './repositories/common/RepositoryMapper';
+import { AccountMapper, AdminPrivilegePresetMapper, ClaimInstanceMapper, ClaimTypeMapper, EnumClaimTypeOptionsMapper, PasswordCredentialMapper, TotpCredentialMapper, SmartLockMapper } from './repositories/common/RepositoryMapper';
 import { AdminPrivilegeUseCases } from './use-cases/AdminPrivilegeUseCases';
 import { SequelizeAdminPrivilegePresetRepository } from './repositories/AdminPrivilegePresetRepository';
 import { ClaimTypeUseCases } from './use-cases/ClaimTypeUseCases';
@@ -22,6 +22,9 @@ import { typeDefs } from './presentation/Schema';
 import { SequelizeReadResolvers } from './presentation/resolvers/SequelizeReadResolvers';
 import { TotpUtilitiesResolvers } from './presentation/resolvers/TotpUtilitiesResolvers';
 import { ClaimTypeResolvers } from './presentation/resolvers/ClaimTypeResolvers';
+import { SmartLockResolvers } from './presentation/resolvers/SmartLockResolvers';
+import { SmartLockUseCases } from './use-cases/SmartLockUseCases';
+import { SequelizeSmartLocksRepository } from './repositories/SmartLocksRepository';
 
 async function initDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
@@ -113,6 +116,12 @@ async function main() {
     claimTypeMapper
   )
 
+  const smartLockMapper = new SmartLockMapper()
+  const smartLocksRepository = new SequelizeSmartLocksRepository(
+    inMemoryDb,
+    smartLockMapper
+  )
+
   const accountUseCases = new AccountUseCases(
     accountsRepository,
     new BcryptJsPasswordService(),
@@ -143,6 +152,8 @@ async function main() {
     )
   )
 
+  const smartLockUseCases = new SmartLockUseCases(smartLocksRepository)
+
   await initDatabase(claimTypeUseCases, accountUseCases)
 
   await new ApolloGraphqlServer(
@@ -150,7 +161,8 @@ async function main() {
       new SequelizeReadResolvers(inMemoryDb),
       new AccountResolvers(accountUseCases),
       new ClaimTypeResolvers(claimTypeUseCases),
-      new TotpUtilitiesResolvers(accountUseCases)
+      new TotpUtilitiesResolvers(accountUseCases),
+      new SmartLockResolvers(smartLockUseCases)
     ],
     typeDefs
   )

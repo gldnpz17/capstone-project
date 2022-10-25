@@ -18,7 +18,9 @@ abstract class SequelizeInstance {
     adminPrivilegePreset: 'AdminPrivilegePreset',
     claimType: 'ClaimType',
     claimInstance: 'ClaimInstance',
-    enumClaimTypeOption: 'EnumClaimTypeOption'
+    enumClaimTypeOption: 'EnumClaimTypeOption',
+    smartLock: 'SmartLock',
+    deviceProfile: 'DeviceProfile'
   }
 
   private static compositeUniques = {
@@ -129,6 +131,31 @@ abstract class SequelizeInstance {
       enumValue: DataTypes.STRING
     })
 
+    const DeviceProfile = this.sequelize.define(SequelizeInstance.modelNames.deviceProfile, {
+      mqttUsername: DataTypes.STRING,
+      mqttPassword: DataTypes.STRING,
+      connectionStatus: DataTypes.STRING
+    })
+
+    const SmartLock = this.sequelize.define(SequelizeInstance.modelNames.smartLock, {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+      },
+      wifiSsid: DataTypes.STRING,
+      wifiPassword: DataTypes.STRING,
+      lockStatus: {
+        type: DataTypes.ENUM('locked', 'unlocked'),
+        defaultValue: 'locked'
+      }
+    })
+
     this.registerAssociation(
       SequelizeInstance.modelNames.adminPrivilegePreset,
       'accounts',
@@ -181,6 +208,17 @@ abstract class SequelizeInstance {
       SequelizeInstance.modelNames.claimInstance,
       'type',
       ClaimInstance.belongsTo(ClaimType)
+    )
+
+    this.registerAssociation(
+      SequelizeInstance.modelNames.smartLock,
+      'profile',
+      SmartLock.hasOne(DeviceProfile)
+    )
+    this.registerAssociation(
+      SequelizeInstance.modelNames.deviceProfile,
+      'smartLock',
+      DeviceProfile.belongsTo(SmartLock)
     )
 
     await this.sequelize.sync()

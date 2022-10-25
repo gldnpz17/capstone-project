@@ -4,6 +4,32 @@ const collectionArgs = (keyParams: { keyType?: 'String' | 'Int' | undefined, nam
   `${keyParams?.name ?? 'id'}: ${keyParams?.keyType ?? 'Int'}, where: String, limit: Int`
 
 const typeDefs = gql`
+  enum ConnectionStatus {
+    connected
+    disconnected
+  }
+
+  type DeviceProfile {
+    id: Int,
+    publicKey: String,
+    connectionStatus: ConnectionStatus,
+    smartLock: SmartLock
+  }
+
+  enum LockStatus {
+    locked
+    unlocked
+  }
+
+  type SmartLock {
+    id: String,
+    name: String,
+    wifiSsid: String,
+    wifiPassword: String,
+    lockStatus: LockStatus,
+    device: DeviceProfile
+  }
+
   type EnumClaimTypeOption {
     id: Int
     value: String
@@ -57,6 +83,8 @@ const typeDefs = gql`
     accounts(${collectionArgs({ keyType: 'String' })}): [Account]
     adminPrivilegePresets: [AdminPrivilegePreset]
     claimTypes(${collectionArgs({ keyType: 'Int' })}): [ClaimType]
+    smartLocks(${collectionArgs({ keyType: 'String' })}): [SmartLock]
+    deviceProfiles(${collectionArgs({ keyType: 'Int' })}): [DeviceProfile]
   }
 
   enum CLAIM_TYPE_DATA_TYPE {
@@ -64,6 +92,12 @@ const typeDefs = gql`
     number
     boolean
     enum
+  }
+
+  input UpdateSmartLockInput {
+    name: String!
+    wifiSsid: String
+    wifiPassword: String
   }
 
   type Mutation {
@@ -78,6 +112,9 @@ const typeDefs = gql`
     deleteClaimType(id: Int): ClaimType,
     addEnumClaimTypeOption(claimTypeId: Int, value: String): EnumClaimTypeOption
     deleteEnumClaimTypeOption(id: Int): EnumClaimTypeOption
+    createSmartLock(name: String!, wifiSsid: String, wifiPassword: String): SmartLock
+    updateSmartLock(id: ID!, instance: UpdateSmartLockInput): SmartLock
+    deleteSmartLock(id: ID!): SmartLock
   }
 `
 

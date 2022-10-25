@@ -6,6 +6,7 @@
   "dependencies": {
     "@types/bcryptjs": "^2.4.2",
     "@types/jsonwebtoken": "^8.5.9",
+    "@types/node-rsa": "^1.1.1",
     "@types/totp-generator": "^0.0.4",
     "apollo-server": "^3.10.2",
     "base32-encode": "^2.0.0",
@@ -14,6 +15,8 @@
     "graphql-relay": "^0.10.0",
     "graphql-sequelize": "^9.4.3",
     "jsonwebtoken": "^8.5.1",
+    "mqtt": "^4.3.7",
+    "node-rsa": "^1.1.1",
     "otplib": "^12.0.1",
     "rfc4648": "^1.5.2",
     "sequelize": "^6.21.4",

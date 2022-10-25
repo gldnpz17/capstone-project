@@ -3,8 +3,10 @@ import { Account } from "../../domain-model/entities/Account";
 import { AdminPrivilegePreset } from "../../domain-model/entities/AdminPrivilegePreset";
 import { BooleanClaim, ClaimInstance, ClaimInstanceUnion, EnumClaim, NumberClaim, StringClaim } from "../../domain-model/entities/ClaimInstance";
 import { ClaimType, ClaimTypeOptions, ClaimTypesUnion, EnumClaimType } from "../../domain-model/entities/ClaimType";
+import { DeviceProfile } from "../../domain-model/entities/DeviceProfile";
 import { EnumClaimTypeOption } from "../../domain-model/entities/EnumClaimTypeOption";
 import { PasswordCredential } from "../../domain-model/entities/PasswordCredential";
+import { SmartLock } from "../../domain-model/entities/SmartLock";
 import { TotpCredential } from "../../domain-model/entities/TotpCredential";
 
 abstract class EntityMapperBase<TEntity> {
@@ -180,6 +182,24 @@ class ClaimInstanceMapper extends EntityMapperBase<ClaimInstanceUnion> {
   }
 }
 
+class SmartLockMapper extends EntityMapperBase<SmartLock> {
+  override map(original: any): BaseExtender<SmartLock> {
+    const { id, name, wifiSsid, wifiPassword, lockStatus } = original
+    return new BaseExtender(
+      new SmartLock(id, name, wifiSsid, wifiPassword, lockStatus)
+    )
+  }
+}
+
+class DeviceProfileMapper extends EntityMapperBase<DeviceProfile> {
+  override map(original: any): BaseExtender<DeviceProfile> {
+    const { id, privateKey, publicKey, connectionStatus } = original
+    return new BaseExtender(
+      new DeviceProfile(id, privateKey, publicKey, connectionStatus)
+    ) 
+  }
+}
+
 export { 
   AccountMapper, 
   PasswordCredentialMapper, 
@@ -188,5 +208,7 @@ export {
   EntityMapperBase,
   ClaimTypeMapper,
   EnumClaimTypeOptionsMapper,
-  ClaimInstanceMapper
+  ClaimInstanceMapper,
+  SmartLockMapper,
+  DeviceProfileMapper
 }
