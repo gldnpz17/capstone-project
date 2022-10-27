@@ -13,8 +13,10 @@ interface AccountsRepository {
   readById(id: string): Promise<Account | undefined>
   readByIdIncludeClaims(id: string): Promise<Account | undefined>
   readByUsernameWithPassword(username: string): Promise<Account | undefined>
+  readByUsernameIncludePasswordAndTotp(username: string): Promise<Account | undefined>
   readByIdIncludeTotp(id: string): Promise<Account | undefined>
   updateAdminPrivilege(accountId: string, privilegeId: number): Promise<Account | undefined>
+  updateSharedSecret(accountId: string, totpSharedSecret: string): Promise<Account | undefined>
   delete(id: string): Promise<Account | undefined>
 }
 
@@ -27,6 +29,18 @@ class SequelizeAccountsRepository implements AccountsRepository {
     private db: SequelizeInstance,
     private mapper: AccountMapper
   ) { }
+
+  readByUsernameIncludePasswordAndTotp = async (username: string): Promise<Account | undefined> => {
+    const instance = (await this.accountModel.findOne({ where: { username } }))?.toJSON()
+
+    if (!instance) throw new NotImplementedError()
+    
+    return this.mapper
+      .map(instance)
+      .addPassword(instance)
+      .addTotp(instance)
+      .get()
+  }
 
   readByIdIncludeClaims = async (id: string): Promise<Account | undefined> => {
     const account = await this.accountModel.findByPk(id, {
@@ -90,6 +104,10 @@ class SequelizeAccountsRepository implements AccountsRepository {
     return await this.accountCrud.update(accountId, { 
       [`${SequelizeInstance.modelNames.adminPrivilegePreset}Id`]: privilegeId
     })
+  }
+
+  updateSharedSecret = async (accountId: string, totpSharedSecret: string): Promise<Account | undefined> => {
+    return await this.accountCrud.update(accountId, { totpSharedSecret })
   }
   
   delete = this.accountCrud.delete

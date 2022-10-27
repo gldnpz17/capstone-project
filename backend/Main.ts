@@ -7,9 +7,9 @@ import { SequelizeAccountsRepository } from "./repositories/AccountsRepository";
 import { SequelizeGenericCrud } from './repositories/common/GenericCrud';
 import { InMemorySqliteSequelizeInstance } from './repositories/common/SequelizeModels';
 import { SequelizeTotpCredentialsRepository } from './repositories/TotpCredentialsRepository';
-import { AccountUseCases, AuthenticationToken, SecondFactorToken } from "./use-cases/AccountUseCases";
+import { AccountUseCases, AuthenticationToken, SecondFactorSetupToken, SecondFactorToken } from "./use-cases/AccountUseCases";
 import { authenticator } from 'otplib'
-import { AccountMapper, AdminPrivilegePresetMapper, ClaimInstanceMapper, ClaimTypeMapper, EnumClaimTypeOptionsMapper, PasswordCredentialMapper, TotpCredentialMapper, SmartLockMapper } from './repositories/common/RepositoryMapper';
+import { AccountMapper, AdminPrivilegePresetMapper, ClaimInstanceMapper, ClaimTypeMapper, EnumClaimTypeOptionsMapper, PasswordCredentialMapper, TotpCredentialMapper, SmartLockMapper, DeviceProfileMapper } from './repositories/common/RepositoryMapper';
 import { AdminPrivilegeUseCases } from './use-cases/AdminPrivilegeUseCases';
 import { SequelizeAdminPrivilegePresetRepository } from './repositories/AdminPrivilegePresetRepository';
 import { ClaimTypeUseCases } from './use-cases/ClaimTypeUseCases';
@@ -25,6 +25,8 @@ import { ClaimTypeResolvers } from './presentation/resolvers/ClaimTypeResolvers'
 import { SmartLockResolvers } from './presentation/resolvers/SmartLockResolvers';
 import { SmartLockUseCases } from './use-cases/SmartLockUseCases';
 import { SequelizeSmartLocksRepository } from './repositories/SmartLocksRepository';
+import { SequelizeDeviceProfilesRepository } from './repositories/DeviceProfilesRepository';
+import { NodeRsaDigitalSignatureService } from './domain-model/services/DigitalSignatureService';
 
 async function initDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
@@ -122,11 +124,18 @@ async function main() {
     smartLockMapper
   )
 
+  const deviceMapper = new DeviceProfileMapper()
+  const devicesRepository = new SequelizeDeviceProfilesRepository(
+    inMemoryDb,
+    deviceMapper
+  )
+
   const accountUseCases = new AccountUseCases(
     accountsRepository,
     new BcryptJsPasswordService(),
     new TotpGeneratorTotpService(),
     new JwtTransientTokenService<SecondFactorToken>(config, "SecondFactorToken"),
+    new JwtTransientTokenService<SecondFactorSetupToken>(config, "SecondFactorSetupToken"),
     new JwtTransientTokenService<AuthenticationToken>(config, "AuthenticationToken"),
     new SequelizeClaimInstancesRepository(
       inMemoryDb,
@@ -152,7 +161,11 @@ async function main() {
     )
   )
 
-  const smartLockUseCases = new SmartLockUseCases(smartLocksRepository)
+  const smartLockUseCases = new SmartLockUseCases(
+    smartLocksRepository,
+    devicesRepository,
+    new NodeRsaDigitalSignatureService()
+  )
 
   await initDatabase(claimTypeUseCases, accountUseCases)
 

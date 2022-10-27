@@ -68,6 +68,7 @@ const typeDefs = gql`
 
   type PasswordAuthenticationResult {
     secondFactorToken: String
+    secondFactorSetupToken: String
   }
 
   type SecondFactorAuthenticationResult {
@@ -102,6 +103,7 @@ const typeDefs = gql`
 
   type Mutation {
     registerAccount(username: String, password: String, privilegeId: Int): Account
+    setupSecondFactor(secondFactorSetupToken: String, sharedSecret: String, totp: String): SecondFactorAuthenticationResult
     deleteAccount(id: ID): Account
     addClaimToAccount(accountId: String, typeId: Int, value: String): ClaimInstance
     updateClaim(id: Int, value: String): ClaimInstance

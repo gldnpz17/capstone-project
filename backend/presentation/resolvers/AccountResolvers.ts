@@ -12,6 +12,7 @@ class AccountResolvers extends ResolversBase {
       registerAccount: this.mapUseCase(this.accountUseCases.register),
       deleteAccount: this.mapUseCase(this.accountUseCases.delete, { spread: true }),
       authenticatePassword: this.mapUseCase(this.accountUseCases.authenticatePassword),
+      setupSecondFactor: this.mapUseCase(this.accountUseCases.setupSecondFactor),
       authenticateSecondFactor: this.mapUseCase(this.accountUseCases.authenticateSecondFactor),
       addClaimToAccount: this.mapUseCase(this.accountUseCases.addClaim),
       updateClaim: this.mapUseCase(this.accountUseCases.updateClaim, { spread: true }),
