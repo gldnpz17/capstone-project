@@ -12,6 +12,8 @@ const typeDefs = gql`
   type DeviceProfile {
     id: Int,
     publicKey: String,
+    macAddress: String,
+    verified: Boolean,
     connectionStatus: ConnectionStatus,
     smartLock: SmartLock
   }
@@ -102,21 +104,29 @@ const typeDefs = gql`
   }
 
   type Mutation {
+    # Accounts
     registerAccount(username: String, password: String, privilegeId: Int): Account
     setupSecondFactor(secondFactorSetupToken: String, sharedSecret: String, totp: String): SecondFactorAuthenticationResult
     deleteAccount(id: ID): Account
+    # Claims
     addClaimToAccount(accountId: String, typeId: Int, value: String): ClaimInstance
     updateClaim(id: Int, value: String): ClaimInstance
     deleteClaim(id: Int): ClaimInstance
+    # Auth
     authenticatePassword(username: String, password: String): PasswordAuthenticationResult
     authenticateSecondFactor(secondFactorToken: String, totp: String): SecondFactorAuthenticationResult
+    # Claim Types
     createClaimType(name: String, dataType: CLAIM_TYPE_DATA_TYPE, options: [String]): ClaimType
     deleteClaimType(id: Int): ClaimType,
     addEnumClaimTypeOption(claimTypeId: Int, value: String): EnumClaimTypeOption
     deleteEnumClaimTypeOption(id: Int): EnumClaimTypeOption
+    # Smart Locks
     createSmartLock(name: String!, wifiSsid: String, wifiPassword: String): SmartLock
     updateSmartLock(id: ID!, instance: UpdateSmartLockInput): SmartLock
     deleteSmartLock(id: ID!): SmartLock
+    connectSmartLock(id: ID!): DeviceProfile
+    confirmDevice(deviceId: ID!, macAddress: String): DeviceProfile
+    pingDevice(id: ID!): Boolean
   }
 `
 

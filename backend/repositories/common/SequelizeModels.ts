@@ -132,9 +132,13 @@ abstract class SequelizeInstance {
     })
 
     const DeviceProfile = this.sequelize.define(SequelizeInstance.modelNames.deviceProfile, {
-      mqttUsername: DataTypes.STRING,
-      mqttPassword: DataTypes.STRING,
-      connectionStatus: DataTypes.STRING
+      privateKey: DataTypes.STRING,
+      publicKey: DataTypes.STRING,
+      macAddress: DataTypes.STRING,
+      verified: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+      }
     })
 
     const SmartLock = this.sequelize.define(SequelizeInstance.modelNames.smartLock, {
@@ -212,13 +216,13 @@ abstract class SequelizeInstance {
 
     this.registerAssociation(
       SequelizeInstance.modelNames.smartLock,
-      'profile',
-      SmartLock.hasOne(DeviceProfile)
+      'device',
+      SmartLock.belongsTo(DeviceProfile)
     )
     this.registerAssociation(
       SequelizeInstance.modelNames.deviceProfile,
       'smartLock',
-      DeviceProfile.belongsTo(SmartLock)
+      DeviceProfile.hasOne(SmartLock)
     )
 
     await this.sequelize.sync()

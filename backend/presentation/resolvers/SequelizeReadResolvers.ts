@@ -59,10 +59,10 @@ class SequelizeReadResolvers extends ResolversBase {
   }
 
   override getTypeResolvers(): object {
-    const { account, adminPrivilegePreset, claimType, claimInstance } = SequelizeInstance.modelNames
+    const { account, adminPrivilegePreset, claimType, claimInstance, deviceProfile, smartLock } = SequelizeInstance.modelNames
 
     return ({
-      ...this.getModelTypeResolvers({ account, adminPrivilegePreset, claimType }),
+      ...this.getModelTypeResolvers({ account, adminPrivilegePreset, claimType, deviceProfile, smartLock }),
       [claimInstance]: {
         ...this.getAssociationResolvers(claimInstance),
         value: (parent: any) => {

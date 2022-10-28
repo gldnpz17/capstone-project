@@ -6,10 +6,10 @@ import { SequelizeInstance } from "./common/SequelizeModels"
 import { DeviceProfileMapper } from "./common/RepositoryMapper"
 
 interface DeviceProfilesRepository {
-  create(deviceProfile: { privateKey: string, publicKey: string, smartLockId: string }): Promise<DeviceProfile>
+  create(deviceProfile: { privateKey: string, publicKey: string }): Promise<DeviceProfile>
   readAll(config: GenericReadAllConfig): Promise<DeviceProfile[]>
   readById(id: number): Promise<DeviceProfile | undefined>
-  update(id: number, instance: { connectionStatus: 'connected' | 'disconnected', smartLockId: string }): Promise<DeviceProfile | undefined>
+  update(id: number, instance: { macAddress: string, verified: boolean }): Promise<DeviceProfile | undefined>
   delete(id: number): Promise<DeviceProfile | undefined>
 }
 

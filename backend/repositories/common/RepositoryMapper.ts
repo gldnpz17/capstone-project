@@ -182,20 +182,37 @@ class ClaimInstanceMapper extends EntityMapperBase<ClaimInstanceUnion> {
   }
 }
 
+class SmartLockExtender extends BaseExtender<SmartLock> {
+  constructor(
+    item: SmartLock,
+    private deviceProfileMapper: DeviceProfileMapper
+  ) { super(item) }
+
+  addDeviceProfile(instance: any): this {
+    this.item.device = this.deviceProfileMapper.map(instance).get()
+    return this
+  }
+}
+
 class SmartLockMapper extends EntityMapperBase<SmartLock> {
-  override map(original: any): BaseExtender<SmartLock> {
+  constructor(
+    private deviceProfileMapper: DeviceProfileMapper
+  ) { super() }
+
+  override map(original: any): SmartLockExtender {
     const { id, name, wifiSsid, wifiPassword, lockStatus } = original
-    return new BaseExtender(
-      new SmartLock(id, name, wifiSsid, wifiPassword, lockStatus)
+    return new SmartLockExtender(
+      new SmartLock(id, name, wifiSsid, wifiPassword, lockStatus),
+      this.deviceProfileMapper
     )
   }
 }
 
 class DeviceProfileMapper extends EntityMapperBase<DeviceProfile> {
   override map(original: any): BaseExtender<DeviceProfile> {
-    const { id, privateKey, publicKey, connectionStatus } = original
+    const { id, privateKey, publicKey, macAddress, verified, connectionStatus } = original
     return new BaseExtender(
-      new DeviceProfile(id, privateKey, publicKey, connectionStatus)
+      new DeviceProfile(id, privateKey, publicKey, macAddress, verified, connectionStatus)
     ) 
   }
 }

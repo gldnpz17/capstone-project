@@ -11,7 +11,19 @@ class ApolloGraphqlServer {
   private spreadResolvers = (extract: (resolvers: ResolversBase) => object) => {
     return this.resolvers
       .map(resolvers => extract(resolvers))
-      .reduce((obj, resolvers) => ({ ...obj, ...resolvers }), {})
+      .reduce((obj, resolvers) => {
+        for (const resolverTypeName in resolvers) {
+          // Combine type resolvers.
+          if (obj[resolverTypeName]) {
+            resolvers[resolverTypeName] = {
+              ...obj[resolverTypeName],
+              ...resolvers[resolverTypeName]
+            }
+          }
+        }
+
+        return (({ ...obj, ...resolvers }))
+      }, {})
   }
 
   async start() {

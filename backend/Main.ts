@@ -27,6 +27,9 @@ import { SmartLockUseCases } from './use-cases/SmartLockUseCases';
 import { SequelizeSmartLocksRepository } from './repositories/SmartLocksRepository';
 import { SequelizeDeviceProfilesRepository } from './repositories/DeviceProfilesRepository';
 import { NodeRsaDigitalSignatureService } from './domain-model/services/DigitalSignatureService';
+import { InMemoryKeyValueService, TransientKeyValueService } from './domain-model/services/KeyValueService';
+import { MockRulesEngineService } from './domain-model/services/RulesEngineService';
+import { MockDeviceMessagingService } from './domain-model/services/DeviceMessagingService';
 
 async function initDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
@@ -100,6 +103,10 @@ async function main() {
   )
 
   const inMemoryDb = await new InMemorySqliteSequelizeInstance().initialize()
+  const deviceProfileStatusStore = new TransientKeyValueService(5000)
+  const lockStatusStore = new InMemoryKeyValueService({ default: 'locked' })
+  const rulesEngineService = new MockRulesEngineService()
+  const deviceMessagingService = new MockDeviceMessagingService()
 
   const claimTypeMapper = new ClaimTypeMapper()
   const claimInstanceMapper = new ClaimInstanceMapper(claimTypeMapper)
@@ -118,16 +125,16 @@ async function main() {
     claimTypeMapper
   )
 
-  const smartLockMapper = new SmartLockMapper()
-  const smartLocksRepository = new SequelizeSmartLocksRepository(
-    inMemoryDb,
-    smartLockMapper
-  )
-
   const deviceMapper = new DeviceProfileMapper()
   const devicesRepository = new SequelizeDeviceProfilesRepository(
     inMemoryDb,
     deviceMapper
+  )
+
+  const smartLockMapper = new SmartLockMapper(deviceMapper)
+  const smartLocksRepository = new SequelizeSmartLocksRepository(
+    inMemoryDb,
+    smartLockMapper
   )
 
   const accountUseCases = new AccountUseCases(
@@ -164,7 +171,11 @@ async function main() {
   const smartLockUseCases = new SmartLockUseCases(
     smartLocksRepository,
     devicesRepository,
-    new NodeRsaDigitalSignatureService()
+    new NodeRsaDigitalSignatureService(),
+    deviceProfileStatusStore,
+    lockStatusStore,
+    rulesEngineService,
+    deviceMessagingService
   )
 
   await initDatabase(claimTypeUseCases, accountUseCases)
@@ -175,7 +186,7 @@ async function main() {
       new AccountResolvers(accountUseCases),
       new ClaimTypeResolvers(claimTypeUseCases),
       new TotpUtilitiesResolvers(accountUseCases),
-      new SmartLockResolvers(smartLockUseCases)
+      new SmartLockResolvers(smartLockUseCases, deviceProfileStatusStore)
     ],
     typeDefs
   )
