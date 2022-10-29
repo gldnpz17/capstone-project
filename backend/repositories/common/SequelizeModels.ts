@@ -20,7 +20,9 @@ abstract class SequelizeInstance {
     claimInstance: 'ClaimInstance',
     enumClaimTypeOption: 'EnumClaimTypeOption',
     smartLock: 'SmartLock',
-    deviceProfile: 'DeviceProfile'
+    deviceProfile: 'DeviceProfile',
+    authorizationRule: 'AuthorizationRule',
+    authorizationRuleInstance: 'AuthorizationRuleInstance'
   }
 
   private static compositeUniques = {
@@ -160,6 +162,17 @@ abstract class SequelizeInstance {
       }
     })
 
+    const AuthorizationRule = this.sequelize.define(SequelizeInstance.modelNames.authorizationRule, {
+      savedRule: DataTypes.STRING,
+      deployedRule: DataTypes.STRING,
+      savedFormSchema: DataTypes.STRING,
+      deployedFormSchema: DataTypes.STRING,
+    })
+
+    const AuthorizationRuleInstance = this.sequelize.define(SequelizeInstance.modelNames.authorizationRuleInstance, {
+      argsValue: DataTypes.STRING
+    })
+
     this.registerAssociation(
       SequelizeInstance.modelNames.adminPrivilegePreset,
       'accounts',
@@ -223,6 +236,32 @@ abstract class SequelizeInstance {
       SequelizeInstance.modelNames.deviceProfile,
       'smartLock',
       DeviceProfile.hasOne(SmartLock)
+    )
+
+    this.registerAssociation(
+      SequelizeInstance.modelNames.authorizationRule,
+      'instances',
+      AuthorizationRule.hasMany(AuthorizationRuleInstance, { 
+        onDelete: 'CASCADE' 
+      })
+    )
+    this.registerAssociation(
+      SequelizeInstance.modelNames.authorizationRuleInstance,
+      'authorizationRule',
+      AuthorizationRuleInstance.belongsTo(AuthorizationRule)
+    )
+
+    this.registerAssociation(
+      SequelizeInstance.modelNames.smartLock,
+      'authorizationRuleInstance',
+      SmartLock.belongsTo(AuthorizationRuleInstance, {
+        onDelete: 'CASCADE'
+      })
+    )
+    this.registerAssociation(
+      SequelizeInstance.modelNames.authorizationRuleInstance,
+      'smartLock',
+      AuthorizationRuleInstance.hasOne(SmartLock)
     )
 
     await this.sequelize.sync()

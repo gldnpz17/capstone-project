@@ -1,6 +1,7 @@
 import { NotImplementedError } from "../../common/Errors";
 import { Account } from "../../domain-model/entities/Account";
 import { AdminPrivilegePreset } from "../../domain-model/entities/AdminPrivilegePreset";
+import { AuthorizationRule } from "../../domain-model/entities/AuthorizationRule";
 import { BooleanClaim, ClaimInstance, ClaimInstanceUnion, EnumClaim, NumberClaim, StringClaim } from "../../domain-model/entities/ClaimInstance";
 import { ClaimType, ClaimTypeOptions, ClaimTypesUnion, EnumClaimType } from "../../domain-model/entities/ClaimType";
 import { DeviceProfile } from "../../domain-model/entities/DeviceProfile";
@@ -217,6 +218,22 @@ class DeviceProfileMapper extends EntityMapperBase<DeviceProfile> {
   }
 }
 
+class AuthorizationRuleMapper extends EntityMapperBase<AuthorizationRule> {
+  override map(original: any): BaseExtender<AuthorizationRule> {
+    const {
+      id,
+      savedRule, 
+      deployedRule,
+      savedFormSchema,
+      deployedFormSchema
+    } = original
+
+    return new BaseExtender(
+      new AuthorizationRule(id, savedRule, deployedRule, savedFormSchema, deployedFormSchema, savedRule == deployedRule)
+    )
+  }
+}
+
 export { 
   AccountMapper, 
   PasswordCredentialMapper, 
@@ -227,5 +244,6 @@ export {
   EnumClaimTypeOptionsMapper,
   ClaimInstanceMapper,
   SmartLockMapper,
-  DeviceProfileMapper
+  DeviceProfileMapper,
+  AuthorizationRuleMapper
 }

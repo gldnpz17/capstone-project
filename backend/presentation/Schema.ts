@@ -10,11 +10,11 @@ const typeDefs = gql`
   }
 
   type DeviceProfile {
-    id: Int,
-    publicKey: String,
-    macAddress: String,
-    verified: Boolean,
-    connectionStatus: ConnectionStatus,
+    id: Int
+    publicKey: String
+    macAddress: String
+    verified: Boolean
+    connectionStatus: ConnectionStatus
     smartLock: SmartLock
   }
 
@@ -24,17 +24,19 @@ const typeDefs = gql`
   }
 
   type SmartLock {
-    id: String,
-    name: String,
-    wifiSsid: String,
-    wifiPassword: String,
-    lockStatus: LockStatus,
+    id: String
+    name: String
+    wifiSsid: String
+    wifiPassword: String
+    lockStatus: LockStatus
     device: DeviceProfile
+    authorizationRuleInstance: AuthorizationRuleInstance
   }
 
   type EnumClaimTypeOption {
     id: Int
     value: String
+    type: ClaimType
   }
 
   type ClaimType {
@@ -68,6 +70,23 @@ const typeDefs = gql`
     claims: [ClaimInstance]
   }
 
+  type AuthorizationRule {
+    id: ID!
+    savedRule: String
+    deployedRule: String
+    savedFormSchema: String
+    deployedFormSchema: String
+    hasPendingChanges: Boolean
+    instances: [AuthorizationRuleInstance]
+  }
+
+  type AuthorizationRuleInstance {
+    id: ID!
+    argsValue: String
+    authorizationRule: AuthorizationRule
+    smartLock: SmartLock
+  }
+
   type PasswordAuthenticationResult {
     secondFactorToken: String
     secondFactorSetupToken: String
@@ -81,6 +100,13 @@ const typeDefs = gql`
     generateSecret: String
   }
 
+  type ExecutionResult {
+    authorized: Boolean,
+    logMessages: [String]
+    denyMessage: String
+    errorMessage: String
+  }
+
   type Query {
     totp: TotpUtilities
     accounts(${collectionArgs({ keyType: 'String' })}): [Account]
@@ -88,6 +114,8 @@ const typeDefs = gql`
     claimTypes(${collectionArgs({ keyType: 'Int' })}): [ClaimType]
     smartLocks(${collectionArgs({ keyType: 'String' })}): [SmartLock]
     deviceProfiles(${collectionArgs({ keyType: 'Int' })}): [DeviceProfile]
+    authorizationRules(${collectionArgs({ keyType: 'Int' })}): [AuthorizationRule]
+    authorizationRuleInstances(${collectionArgs({ keyType: 'Int' })}): [AuthorizationRuleInstance]
   }
 
   enum CLAIM_TYPE_DATA_TYPE {
@@ -101,6 +129,11 @@ const typeDefs = gql`
     name: String!
     wifiSsid: String
     wifiPassword: String
+  }
+
+  input ClaimInput {
+    typeId: Int
+    value: String
   }
 
   type Mutation {
@@ -127,6 +160,12 @@ const typeDefs = gql`
     connectSmartLock(id: ID!): DeviceProfile
     confirmDevice(deviceId: ID!, macAddress: String): DeviceProfile
     pingDevice(id: ID!): Boolean
+    # Authorization Rules
+    createAuthorizationRule: AuthorizationRule
+    saveAuthorizationRuleChanges(id: ID!, authorizationRule: String): Boolean
+    deployAuthorizationRule(id: ID!): Boolean
+    deleteAuthorizationRule(id: ID!): Boolean
+    testAuthorizationRule(id: ID!, args: String, claims: [ClaimInput]): ExecutionResult
   }
 `
 

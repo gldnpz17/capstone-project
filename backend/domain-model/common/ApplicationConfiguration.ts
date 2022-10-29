@@ -16,7 +16,8 @@ class AdminPrivilege {
 class ApplicationConfiguration {
   constructor(
     public jwtSigningSecret: string,
-    public adminPrivileges: AdminPrivilege[]
+    public adminPrivileges: AdminPrivilege[],
+    public defaultAuthorizationRule: string
   ) { }
 }
 

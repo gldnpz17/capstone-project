@@ -4,4 +4,10 @@ class NotImplementedError extends Error {
   }
 }
 
-export { NotImplementedError }
+class FormSchemaError extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
+
+export { NotImplementedError, FormSchemaError }
