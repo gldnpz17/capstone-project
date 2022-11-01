@@ -149,11 +149,11 @@ authorize(globals.request, globals.args)`)
     return newState
   }
 
-  applySchema = (formValues: string, formSchema: string): string => {
+  applySchema = (formSchema: string, formValues: string): string => {
     const parsedFormValues = JSON.parse(formValues)
     const parsedFormSchema = JSON.parse(formSchema)
 
-    return JSON.stringify(this._mapGroupState(parsedFormSchema, parsedFormValues))
+    return JSON.stringify(this._mapGroupState(parsedFormSchema.root, parsedFormValues))
   }
 
   _generateListSchema = (inputArrayType: ArrayTypeNode): ListSchema => {

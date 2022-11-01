@@ -72,6 +72,7 @@ const typeDefs = gql`
 
   type AuthorizationRule {
     id: ID!
+    name: String
     savedRule: String
     deployedRule: String
     savedFormSchema: String
@@ -136,6 +137,10 @@ const typeDefs = gql`
     value: String
   }
 
+  input AuthorizationRuleInput {
+    name: String!
+  }
+
   type Mutation {
     # Accounts
     registerAccount(username: String, password: String, privilegeId: Int): Account
@@ -163,9 +168,11 @@ const typeDefs = gql`
     # Authorization Rules
     createAuthorizationRule: AuthorizationRule
     saveAuthorizationRuleChanges(id: ID!, authorizationRule: String): Boolean
+    updateAuthorizationRule(id: ID!, name: AuthorizationRuleInput): Boolean
     deployAuthorizationRule(id: ID!): Boolean
     deleteAuthorizationRule(id: ID!): Boolean
     testAuthorizationRule(id: ID!, args: String, claims: [ClaimInput]): ExecutionResult
+    applySchema(schema: String, values: String): String
   }
 `
 

@@ -5,6 +5,9 @@ import { Box } from "@mui/system"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { RootComponent } from "../components/RootComponent"
 import { Project, SyntaxKind, TypeReferenceNode, ArrayTypeNode } from "ts-morph"
+import { useParams } from "react-router-dom"
+import { useMutation, useQuery } from "@apollo/client"
+import { APPLY_SCHEMA, READ_AUTHORIZATION_RULE_BY_ID, SAVE_AUTHORIZATION_RULE } from "../queries/AuthorizationRule"
 
 const DEFAULT_EDITOR_CODE = 
 `class Args {
@@ -16,174 +19,6 @@ function authorize(args: Args) {
 
 }
 `
-
-const mapPrimitiveState = (primitiveSchema, oldState) => {
-  try {
-    switch(primitiveSchema.primitiveType) {
-      case 'number':
-        return Number.parseFloat(oldState)
-      case 'string':
-        return typeof (oldState) === 'string' ? oldState : oldState.toString()
-      default:
-        return null
-    }
-  } catch {
-    return null
-  }
-}
-
-const mapListState = (listSchema, oldState) => {
-  return oldState.map(state => {
-    const schema = listSchema.itemSchema
-
-    switch (schema.type) {
-      case 'primitive':
-        return mapPrimitiveState(schema, state)
-      case 'list':
-        return mapListState(schema, state)
-      case 'group':
-        return mapGroupState(schema, state)
-    }
-  })
-}
-
-const mapGroupState = (groupSchema, oldState) => {
-  const newState = {}
-
-  for (const name in groupSchema.fieldSchema) {
-    if (!oldState[name]) {
-      newState[name] = null
-      continue
-    }
-
-    const schema = groupSchema.fieldSchema[name]
-    switch (schema.type) {
-      case 'primitive':
-        newState[name] = mapPrimitiveState(schema, oldState[name])
-        break
-      case 'list':
-        newState[name] = mapListState(schema, oldState[name])
-        break
-      case 'group':
-        newState[name] = mapGroupState(schema, oldState[name])
-        break
-    }
-  }
-
-  return newState
-}
-
-class FormSchemaError extends Error {
-  constructor(message) {
-    super(message)
-  }
-}
-
-const generateListSchema = (inputArrayType) => {
-  const arrayType = inputArrayType.getFirstChildByKind(SyntaxKind.ArrayType)
-  const typeReference = inputArrayType.getFirstChildByKind(SyntaxKind.TypeReference)
-  const primitiveType = inputArrayType?.getType()?.getArrayElementType()?.compilerType?.['intrinsicName']
-
-  let itemSchema = null
-  if (arrayType) {
-    itemSchema = generateListSchema(arrayType)
-  } else if (typeReference) {
-    itemSchema = generateGroupSchema(typeReference)
-  } else if (primitiveType) {
-    itemSchema = {
-      type: 'primitive',
-      primitiveType
-    }
-  } else {
-    throw new FormSchemaError('Invalid AST node type for the Array\'s itemSchema.')
-  }
-
-  return {
-    type: 'list',
-    itemSchema
-  }
-}
-
-const generateGroupSchema = (typeReference) => {
-  const classDeclaration = typeReference
-    ?.getFirstChildByKind(SyntaxKind.Identifier)
-    ?.getDefinitionNodes()
-    ?.find(definition => definition.isKind(SyntaxKind.ClassDeclaration))
-
-  const name = classDeclaration?.getFirstChildByKind(SyntaxKind.Identifier)?.getText()
-
-  if (!name) throw new FormSchemaError('Unabled to get class identifier.')
-
-  const fieldSchema = classDeclaration
-    ?.getFirstChildByKind(SyntaxKind.SyntaxList)
-    ?.getChildrenOfKind(SyntaxKind.PropertyDeclaration)
-    ?.reduce((propertyObject, property) => {
-      const arrayType = property.getFirstChildByKind(SyntaxKind.ArrayType)
-      const typeReference = property.getFirstChildByKind(SyntaxKind.TypeReference)
-      const primitiveKeyword = [
-        SyntaxKind.StringKeyword, 
-        SyntaxKind.BooleanKeyword, 
-        SyntaxKind.NumberKeyword
-      ].find(syntaxKind => Boolean(property.getFirstChildByKind(syntaxKind)))
-
-      let schema = null
-      try {
-        if (arrayType) {
-          schema = generateListSchema(arrayType)
-        } else if (typeReference) {
-          schema = generateGroupSchema(typeReference)
-        } else if (primitiveKeyword) {
-          schema = {
-            type: 'primitive',
-            primitiveType: property?.getFirstChildByKind(primitiveKeyword)?.getText() ?? null
-          }
-        } else {
-          throw new FormSchemaError('Invalid AST node type for the group\'s fieldSchema.')
-        }
-      } catch {
-        return propertyObject
-      }
-
-      const propertyName = property?.getFirstChildByKind(SyntaxKind.Identifier)?.getText()
-
-      if (!propertyName) throw new FormSchemaError('Can\'t resolve property name.')
-
-      return {
-        ...propertyObject,
-        [propertyName]: schema
-      }
-    }, {})
-
-  return {
-    type: 'group',
-    name,
-    fieldSchema: fieldSchema ?? {}
-  }
-}
-
-const generateFormSchema = (code) => {
-  const project = new Project({ useInMemoryFileSystem: true })
-  const source = project.createSourceFile("something.ts", code)
-
-  const authorizeFunction = source
-    .getFirstChildByKind(SyntaxKind.SyntaxList)
-    ?.getChildrenOfKind(SyntaxKind.FunctionDeclaration)
-    ?.find(func => func.getName() === 'authorize')
-
-  if (!authorizeFunction) throw new FormSchemaError('Cannot find a function with the identifier "authorize".')
-
-  const argsTypeReference = authorizeFunction
-    ?.getFirstChildByKind(SyntaxKind.SyntaxList)
-    ?.getChildrenOfKind(SyntaxKind.Parameter)
-    ?.find(param => param.getName() === 'args')
-    ?.getFirstChildByKind(SyntaxKind.TypeReference)
-
-  if (!argsTypeReference) throw new FormSchemaError('Cannot find a parameter named "args" inside the "authorize" function.')
-
-  return {
-    root: generateGroupSchema(argsTypeReference)
-  }
-}
 
 const FormGroup = ({ groupSchema, state, setState }) => {
   useEffect(() => {
@@ -276,30 +111,57 @@ const FormPrimitive = ({ primitiveSchema, state, setState }) => {
   )
 }
 
-const defaultFormState = {
-  schema: generateFormSchema(DEFAULT_EDITOR_CODE),
-  state: {}
-}
-
 const AuthorizationRuleEditor = () => {
-  const [editorContent, setEditorContent] = useState(DEFAULT_EDITOR_CODE)
-  const [savedEditorContent, setSavedEditorContent] = useState(DEFAULT_EDITOR_CODE)
-  const [form, setForm] = useState(defaultFormState)
+  const { ruleId } = useParams()
 
-  const setFormState = (newState) => setForm((oldForm) => ({ ...oldForm, state: { ...oldForm.state, ...newState } }))
-  const setFormSchema = useCallback((schema) => setForm({ schema, state: mapGroupState(schema.root, form.state) }), [form.state])
+  const {
+    data: { 
+      authorizationRules: [rule] 
+    } = { authorizationRules: [] },
+    loading: ruleLoading
+  } = useQuery(READ_AUTHORIZATION_RULE_BY_ID, { 
+    variables: { id: Number.parseInt(ruleId) } 
+  })
 
-  const changesSaved = useMemo(() => editorContent === savedEditorContent, [editorContent, savedEditorContent])
+  const schema = useMemo(() => rule ? JSON.parse(rule.savedFormSchema) : null, [rule])
+
+  const [editorContent, setEditorContent] = useState()
+  const [formState, setFormState] = useState({})
+
+  const [applySchema, { loading: applySchemaLoading }] = useMutation(APPLY_SCHEMA, {
+    variables: { schema: rule?.savedFormSchema, values: JSON.stringify(formState) }
+  })
+
+  const updateSchema = useCallback(async () => {
+    const oldState = JSON.stringify(formState)
+    const newSchema = rule.savedFormSchema
+
+    const { data: { applySchema: newState } } = await applySchema({
+      variables: { schema: newSchema, values: oldState }
+    })
+
+    setFormState(JSON.parse(newState))
+
+  }, [rule, formState])
 
   useEffect(() => {
-    setFormSchema(generateFormSchema(savedEditorContent))
-  }, [savedEditorContent])
+    if (rule) setEditorContent(rule.savedRule)
+  }, [rule])
 
+  useEffect(() => {
+    if (rule) updateSchema()
+  }, [rule])
+
+  const [saveAuthorizationRule, { loading: saveAuthorizationRuleLoading }] = useMutation(SAVE_AUTHORIZATION_RULE, {
+    variables: { id: Number.parseInt(ruleId), authorizationRule: editorContent },
+    refetchQueries: [ { query: READ_AUTHORIZATION_RULE_BY_ID } ]
+  })
+  
   useEffect(() => {
     const callback = e => {
       if (e.ctrlKey && e.key == "s") {
-        setSavedEditorContent(editorContent)
         e.preventDefault()
+        saveAuthorizationRule()
       }
     }
 
@@ -313,29 +175,46 @@ const AuthorizationRuleEditor = () => {
       <Stack flexDirection="row" sx={{ p: 2 }} spacing={1} alignItems="center">
         <Typography>Authorization Rule Editor</Typography>
         <Box sx={{ flexGrow: 1 }} />
-        {!changesSaved && (
+        {(rule?.savedRule !== editorContent && !saveAuthorizationRuleLoading) && (
           <Typography>There are unsaved changes.</Typography>
+        )}
+        {saveAuthorizationRuleLoading && (
+          <Typography>Saving changes...</Typography>
         )}
         <Button variant="contained" startIcon={<PlayArrow />}>Run</Button>
       </Stack>
-      <Grid container sx={{ flexGrow: 1 }}>
-        <Grid item xs={8}>
-          <Editor 
-            height="100%"
-            defaultLanguage='typescript'
-            defaultValue={DEFAULT_EDITOR_CODE}
-            theme="vs-dark"
-            onChange={text => setEditorContent(text)}
-            onMount={(editor, _) => setEditorContent(editor.getValue())}
-          />
-        </Grid>
-        <Grid item xs={4} sx={{ p: 2 }}>
-          <FormGroup groupSchema={form.schema.root} state={form.state} setState={setFormState} />
-        </Grid>
-      </Grid>
-      <Box sx={{ height: "10rem" }}>
+      {(ruleLoading || !schema)
+        ? (
+          <Typography>Loading...</Typography>
+        )
+        : (
+          <>
+            <Grid container sx={{ flexGrow: 1 }}>
+              <Grid item xs={8}>
+                <Editor 
+                  height="100%"
+                  defaultLanguage='typescript'
+                  theme="vs-dark"
+                  defaultValue={rule.savedRule}
+                  onChange={text => setEditorContent(text)}
+                  onMount={(editor, _) => setEditorContent(editor.getValue())}
+                />
+              </Grid>
+              <Grid item xs={4} sx={{ p: 2 }}>
+                <Stack>
+                  {applySchemaLoading && (
+                    <Typography>Applying new schema...</Typography>
+                  )}
+                  <FormGroup groupSchema={schema.root} state={formState} setState={(newState) => setFormState((oldState) => ({ ...oldState, ...newState }))} />
+                </Stack>
+              </Grid>
+            </Grid>
+            <Box sx={{ height: "10rem" }}>
 
-      </Box>
+            </Box>
+          </>
+        )
+      }
     </Stack>
   )
 }

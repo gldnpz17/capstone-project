@@ -33,7 +33,7 @@ function App() {
                                 <Route path="login" element={<LoginForm />} />
                                 <Route path="accounts" element={<AccManagement />} />
                                 <Route path="smart-locks" element={<SmartLockList />} />
-                                <Route path="editor" element={<AuthorizationRuleEditor />} />
+                                <Route path="editor/:ruleId" element={<AuthorizationRuleEditor />} />
                             </Route>
                         </Routes>
                     </BrowserRouter>

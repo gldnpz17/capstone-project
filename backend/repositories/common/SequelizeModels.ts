@@ -163,6 +163,10 @@ abstract class SequelizeInstance {
     })
 
     const AuthorizationRule = this.sequelize.define(SequelizeInstance.modelNames.authorizationRule, {
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
       savedRule: DataTypes.STRING,
       deployedRule: DataTypes.STRING,
       savedFormSchema: DataTypes.STRING,

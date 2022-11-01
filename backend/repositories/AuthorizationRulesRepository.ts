@@ -4,9 +4,9 @@ import { SequelizeInstance } from "./common/SequelizeModels";
 import { SequelizeRepositoryBase } from "./common/SequelizeRepositoryBase";
 
 interface AuthorizationRulesRepository {
-  create(authorizationRule: { savedRule: string, savedFormSchema: string }): Promise<AuthorizationRule>
+  create(authorizationRule: { name: string, savedRule: string, savedFormSchema: string }): Promise<AuthorizationRule>
   readById(id: number): Promise<AuthorizationRule | undefined>
-  update(id: number, authorizationRule: { savedRule?: string, deployedRule?: string, savedFormSchema?: string, deployedFormSchema?: string }): Promise<AuthorizationRule | undefined>
+  update(id: number, authorizationRule: { name?: string, savedRule?: string, deployedRule?: string, savedFormSchema?: string, deployedFormSchema?: string }): Promise<AuthorizationRule | undefined>
   delete(id: number): Promise<AuthorizationRule | undefined>
 }
 

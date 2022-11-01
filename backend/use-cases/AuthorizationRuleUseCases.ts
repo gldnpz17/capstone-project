@@ -19,6 +19,7 @@ class AuthorizationRuleUseCases {
     const defaultRule = this.configuration.defaultAuthorizationRule
 
     const newAuthorizationRule = await this.repository.create({
+      name: "Untitled Rule",
       savedRule: defaultRule,
       savedFormSchema: this.rulesEngineService.generateFormSchema(defaultRule)
     })
@@ -35,6 +36,11 @@ class AuthorizationRuleUseCases {
     })
   }
 
+  update = async (id: number, rule: { name: string }) => {
+    const { name } = rule
+    return await this.repository.update(id, { name })
+  }
+
   deploy = async (id: number): Promise<void> => {
     const authorizationRule = await this.repository.readById(id)
 
@@ -46,6 +52,11 @@ class AuthorizationRuleUseCases {
       deployedRule: savedRule,
       deployedFormSchema: savedFormSchema
     })
+  }
+
+  applySchema = async (params: { schema: string, values: string }): Promise<string> => {
+    const newValues = this.rulesEngineService.applySchema(params.schema, params.values)
+    return newValues
   }
 
   execute = async (params: { id: number, args: string, claims: { typeId: number, value: string }[] }) => {

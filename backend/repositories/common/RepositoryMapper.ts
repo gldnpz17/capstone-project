@@ -222,6 +222,7 @@ class AuthorizationRuleMapper extends EntityMapperBase<AuthorizationRule> {
   override map(original: any): BaseExtender<AuthorizationRule> {
     const {
       id,
+      name,
       savedRule, 
       deployedRule,
       savedFormSchema,
@@ -229,7 +230,7 @@ class AuthorizationRuleMapper extends EntityMapperBase<AuthorizationRule> {
     } = original
 
     return new BaseExtender(
-      new AuthorizationRule(id, savedRule, deployedRule, savedFormSchema, deployedFormSchema, savedRule == deployedRule)
+      new AuthorizationRule(id, name, savedRule, deployedRule, savedFormSchema, deployedFormSchema, savedRule == deployedRule)
     )
   }
 }

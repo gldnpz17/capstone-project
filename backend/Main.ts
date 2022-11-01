@@ -1,15 +1,12 @@
-import { Sequelize } from 'sequelize'
 import { AdminPrivilege, AdminPrivilegeNames, ApplicationConfiguration } from './domain-model/common/ApplicationConfiguration';
 import { BcryptJsPasswordService } from './domain-model/services/PasswordService';
 import { TotpGeneratorTotpService } from './domain-model/services/TotpService';
 import { JwtTransientTokenService } from './domain-model/services/TransientTokenService';
 import { SequelizeAccountsRepository } from "./repositories/AccountsRepository";
-import { SequelizeGenericCrud } from './repositories/common/GenericCrud';
 import { InMemorySqliteSequelizeInstance } from './repositories/common/SequelizeModels';
-import { SequelizeTotpCredentialsRepository } from './repositories/TotpCredentialsRepository';
 import { AccountUseCases, AuthenticationToken, SecondFactorSetupToken, SecondFactorToken } from "./use-cases/AccountUseCases";
 import { authenticator } from 'otplib'
-import { AccountMapper, AdminPrivilegePresetMapper, ClaimInstanceMapper, ClaimTypeMapper, EnumClaimTypeOptionsMapper, PasswordCredentialMapper, TotpCredentialMapper, SmartLockMapper, DeviceProfileMapper } from './repositories/common/RepositoryMapper';
+import { AccountMapper, AdminPrivilegePresetMapper, ClaimInstanceMapper, ClaimTypeMapper, EnumClaimTypeOptionsMapper, PasswordCredentialMapper, TotpCredentialMapper, SmartLockMapper, DeviceProfileMapper, AuthorizationRuleMapper } from './repositories/common/RepositoryMapper';
 import { AdminPrivilegeUseCases } from './use-cases/AdminPrivilegeUseCases';
 import { SequelizeAdminPrivilegePresetRepository } from './repositories/AdminPrivilegePresetRepository';
 import { ClaimTypeUseCases } from './use-cases/ClaimTypeUseCases';
@@ -28,8 +25,11 @@ import { SequelizeSmartLocksRepository } from './repositories/SmartLocksReposito
 import { SequelizeDeviceProfilesRepository } from './repositories/DeviceProfilesRepository';
 import { NodeRsaDigitalSignatureService } from './domain-model/services/DigitalSignatureService';
 import { InMemoryKeyValueService, TransientKeyValueService } from './domain-model/services/KeyValueService';
-import { MockRulesEngineService } from './domain-model/services/RulesEngineService';
+import { TypeScriptRulesEngineService } from './domain-model/services/RulesEngineService';
 import { MockDeviceMessagingService } from './domain-model/services/DeviceMessagingService';
+import { AuthorizationRuleResolvers } from './presentation/resolvers/AuthorizationRuleResolvers';
+import { AuthorizationRuleUseCases } from './use-cases/AuthorizationRuleUseCases';
+import { SequelizeAuthorizationRulesRepository } from './repositories/AuthorizationRulesRepository';
 
 async function initDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
@@ -86,6 +86,16 @@ async function initDatabase(
 }
 
 async function main() {
+  const DEFAULT_AUTHORIZATION_RULE = 
+`class Args {
+  foo: string
+  bar: number[]
+}
+
+function authorize(args: Args) {
+
+}`
+
   const config = new ApplicationConfiguration(
     'somesecret',
     [
@@ -99,13 +109,14 @@ async function main() {
         'Can manage smart locks',
         preset => preset.canManageLocks
       )
-    ]
+    ],
+    DEFAULT_AUTHORIZATION_RULE
   )
 
   const inMemoryDb = await new InMemorySqliteSequelizeInstance().initialize()
   const deviceProfileStatusStore = new TransientKeyValueService(5000)
   const lockStatusStore = new InMemoryKeyValueService({ default: 'locked' })
-  const rulesEngineService = new MockRulesEngineService()
+  const rulesEngineService = new TypeScriptRulesEngineService()
   const deviceMessagingService = new MockDeviceMessagingService()
 
   const claimTypeMapper = new ClaimTypeMapper()
@@ -135,6 +146,12 @@ async function main() {
   const smartLocksRepository = new SequelizeSmartLocksRepository(
     inMemoryDb,
     smartLockMapper
+  )
+
+  const authorizationRuleMapper = new AuthorizationRuleMapper()
+  const authorizationRulesRepository = new SequelizeAuthorizationRulesRepository(
+    inMemoryDb,
+    authorizationRuleMapper
   )
 
   const accountUseCases = new AccountUseCases(
@@ -178,6 +195,13 @@ async function main() {
     deviceMessagingService
   )
 
+  const authorizationRuleUseCases = new AuthorizationRuleUseCases(
+    config,
+    authorizationRulesRepository,
+    claimTypesRepository,
+    rulesEngineService
+  )
+
   await initDatabase(claimTypeUseCases, accountUseCases)
 
   await new ApolloGraphqlServer(
@@ -186,7 +210,8 @@ async function main() {
       new AccountResolvers(accountUseCases),
       new ClaimTypeResolvers(claimTypeUseCases),
       new TotpUtilitiesResolvers(accountUseCases),
-      new SmartLockResolvers(smartLockUseCases, deviceProfileStatusStore)
+      new SmartLockResolvers(smartLockUseCases, deviceProfileStatusStore),
+      new AuthorizationRuleResolvers(authorizationRuleUseCases)
     ],
     typeDefs
   )

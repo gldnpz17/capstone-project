@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import "../styles/SmartLockSetting.css";
-import { Button, CardContent, Typography, Card, Grid, TextField, Tabs, Tab, Box } from '@mui/material';
+import { Button, CardContent, Typography, Card, Grid, TextField, Tabs, Tab, Box, MenuItem } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import theme from '../components/UItheme';
+import { useQuery } from "@apollo/client";
+import { READ_ALL_AUTHORIZATION_RULES } from "../queries/AuthorizationRule";
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -25,6 +27,13 @@ function TabPanel(props) {
 
 function SmartLockSetting({ lock }) {
     const [tab, setTab] = useState(0)
+    const {
+        data: { authorizationRules } = {}
+    } = useQuery(READ_ALL_AUTHORIZATION_RULES)
+
+    const createNewRule = () => {
+        
+    }
 
     return(
         <div className="cover-setting" style={{ zIndex: 3000 }}>
@@ -71,12 +80,15 @@ function SmartLockSetting({ lock }) {
                                 <TabPanel value={tab} index={1}>
                                     <Grid container spacing={1}>                
                                         <Grid item xs={8}>
-                                            <TextField id="" name="Authorization-Rule" label="Authorization Rule" variant="outlined"  
-                                            /*onChange= {}*/ fullWidth required select />
+                                            <TextField id="" name="Authorization-Rule" label="Authorization Rule" variant="outlined" fullWidth required select>
+                                                {authorizationRules?.map(rule => (
+                                                    <MenuItem key={rule.id} value={rule.id}>{rule.name}</MenuItem>
+                                                ))}
+                                            </TextField>
                                         </Grid>
                                         <Grid item xs={4}>
                                             <Button className="btn-addrule" type="submit" /*onClick={}*/ variant="contained" color="primary" value="" style={{ textTransform: 'none'}} fullWidth>
-                                            <Typography style={{ fontWeight: 500 }}>Add Rule</Typography></Button>
+                                            <Typography style={{ fontWeight: 500 }}>New Rule</Typography></Button>
                                         </Grid>
                                         <Grid item xs={12} spacing={1}>
                                             <TextField
