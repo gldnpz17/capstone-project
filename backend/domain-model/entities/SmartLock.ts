@@ -1,4 +1,4 @@
-import { AuthorizationRuleInstance } from "./AuthorizationRuleInstance";
+import { AuthorizationRule } from "./AuthorizationRule";
 import { DeviceProfile } from "./DeviceProfile";
 
 class SmartLock {
@@ -8,8 +8,9 @@ class SmartLock {
     public wifiSsid: string,
     public wifiPassword: string,
     public lockStatus: 'locked' | 'unlocked',
+    public authorizationRuleArgs: string,
     public device?: DeviceProfile,
-    public rule? : AuthorizationRuleInstance
+    public authorizationRule? : AuthorizationRule
   ) { }
 }
 

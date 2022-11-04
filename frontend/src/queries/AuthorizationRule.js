@@ -13,6 +13,7 @@ const READ_ALL_AUTHORIZATION_RULES = gql`
     authorizationRules {
       id
       name
+      deployedFormSchema
       hasPendingChanges
     }
   }
@@ -67,6 +68,14 @@ const UPDATE_AUTHORIZATION_RULE = gql`
   }
 `
 
+const READ_AUTHORIZATION_RULE_NAME = gql`
+  query ReadAuthorizationRuleName($id: Int) {
+    authorizationRules(id: $id) {
+      name
+    }
+  }
+`
+
 export {
   CREATE_AUTHORIZATION_RULE,
   READ_ALL_AUTHORIZATION_RULES,
@@ -75,5 +84,6 @@ export {
   DEPLOY_AUTHORIZATION_RULE,
   APPLY_SCHEMA,
   TEST_AUTHORIZATION_RULE,
-  UPDATE_AUTHORIZATION_RULE
+  UPDATE_AUTHORIZATION_RULE,
+  READ_AUTHORIZATION_RULE_NAME
 }

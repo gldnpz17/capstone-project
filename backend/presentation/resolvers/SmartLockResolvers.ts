@@ -25,7 +25,8 @@ class SmartLockResolvers extends ResolversBase {
       deleteSmartLock: this.mapUseCase(this.useCases.delete, { spread: true }),
       connectSmartLock: this.mapUseCase(this.useCases.connect, { spread: true }),
       pingDevice: this.mapUseCase(this.useCases.ping, { spread: true }),
-      confirmDevice: this.mapUseCase(this.useCases.confirmDevice)
+      confirmDevice: this.mapUseCase(this.useCases.confirmDevice),
+      updateSmartLockRule: this.mapUseCase(this.useCases.updateSmartLockRule)
     }
   }
 }

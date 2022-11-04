@@ -6,7 +6,7 @@ import { SequelizeAccountsRepository } from "./repositories/AccountsRepository";
 import { InMemorySqliteSequelizeInstance } from './repositories/common/SequelizeModels';
 import { AccountUseCases, AuthenticationToken, SecondFactorSetupToken, SecondFactorToken } from "./use-cases/AccountUseCases";
 import { authenticator } from 'otplib'
-import { AccountMapper, AdminPrivilegePresetMapper, ClaimInstanceMapper, ClaimTypeMapper, EnumClaimTypeOptionsMapper, PasswordCredentialMapper, TotpCredentialMapper, SmartLockMapper, DeviceProfileMapper, AuthorizationRuleMapper } from './repositories/common/RepositoryMapper';
+import { AccountMapper, AdminPrivilegePresetMapper, ClaimInstanceMapper, ClaimTypeMapper, EnumClaimTypeOptionsMapper, PasswordCredentialMapper, TotpCredentialMapper, SmartLockMapper, DeviceProfileMapper, AuthorizationRuleMapper, ShallowSmartLockMapper, ShallowAuthorizationRuleMapper } from './repositories/common/RepositoryMapper';
 import { AdminPrivilegeUseCases } from './use-cases/AdminPrivilegeUseCases';
 import { SequelizeAdminPrivilegePresetRepository } from './repositories/AdminPrivilegePresetRepository';
 import { ClaimTypeUseCases } from './use-cases/ClaimTypeUseCases';
@@ -142,13 +142,23 @@ function authorize(request: SmartLock.Request, args: Args) {
     deviceMapper
   )
 
-  const smartLockMapper = new SmartLockMapper(deviceMapper)
+  const shallowSmartLockMapper = new ShallowSmartLockMapper()
+  const shallowAuthorizationRuleMapper = new ShallowAuthorizationRuleMapper()
+
+  const smartLockMapper = new SmartLockMapper(
+    deviceMapper, 
+    shallowAuthorizationRuleMapper, 
+    shallowSmartLockMapper
+  )
   const smartLocksRepository = new SequelizeSmartLocksRepository(
     inMemoryDb,
     smartLockMapper
   )
 
-  const authorizationRuleMapper = new AuthorizationRuleMapper()
+  const authorizationRuleMapper = new AuthorizationRuleMapper(
+    shallowAuthorizationRuleMapper, 
+    shallowSmartLockMapper
+  )
   const authorizationRulesRepository = new SequelizeAuthorizationRulesRepository(
     inMemoryDb,
     authorizationRuleMapper
@@ -199,6 +209,7 @@ function authorize(request: SmartLock.Request, args: Args) {
     config,
     authorizationRulesRepository,
     claimTypesRepository,
+    smartLocksRepository,
     rulesEngineService
   )
 

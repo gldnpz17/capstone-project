@@ -8,15 +8,17 @@ interface SmartLocksRepository {
   create(smartLock: { name: string, wifiSsid?: string, wifiPassword?: string }): Promise<SmartLock>
   readAll(config: GenericReadAllConfig): Promise<SmartLock[]>
   readById(id: string): Promise<SmartLock | undefined>
-  readByIdIncludeDevice(id: string): Promise<SmartLock | undefined>
-  update(id: string, instance: { name?: string }): Promise<SmartLock | undefined>
+  readByIdIncludeDeviceAndAuthorizationRule(id: string): Promise<SmartLock | undefined>
+  update(id: string, instance: { name?: string, authorizationRuleArgs?: string }): Promise<SmartLock | undefined>
   updateDeviceProfileId(id: string, deviceId: number): Promise<SmartLock | undefined>
+  updateAuthorizationRule(id: string, rule: { id: number, args: string }): Promise<SmartLock | undefined>
   delete(id: string): Promise<SmartLock | undefined>
 }
 
 class SequelizeSmartLocksRepository extends SequelizeRepositoryBase<SmartLock> implements SmartLocksRepository {
   smartLockModel = this.db.getModel(SequelizeInstance.modelNames.smartLock)
   deviceProfileModel = this.db.getModel(SequelizeInstance.modelNames.deviceProfile)
+  authorizationRuleModel = this.db.getModel(SequelizeInstance.modelNames.authorizationRule)
 
   constructor(
     db: SequelizeInstance,
@@ -27,14 +29,18 @@ class SequelizeSmartLocksRepository extends SequelizeRepositoryBase<SmartLock> i
   readAll = this.crud.readAll
   readById = this.crud.readById
 
-  readByIdIncludeDevice = async (id: string): Promise<SmartLock | undefined> => {
-    const account = (await this.smartLockModel
+  readByIdIncludeDeviceAndAuthorizationRule = async (id: string): Promise<SmartLock | undefined> => {
+    const smartLock = (await this.smartLockModel
       .findByPk(id, {
-        include: [this.deviceProfileModel]
+        include: [this.deviceProfileModel, this.authorizationRuleModel]
       }))
       ?.toJSON()
 
-    return this.mapper.map(account).addDeviceProfile(account?.[SequelizeInstance.modelNames.deviceProfile]).get()
+    return this.mapper
+      .map(smartLock)
+      .addDeviceProfile(smartLock?.[SequelizeInstance.modelNames.deviceProfile])
+      .addAuthorizationRule(smartLock?.[SequelizeInstance.modelNames.authorizationRule])
+      .get()
   }
 
   update = this.crud.update
@@ -42,6 +48,13 @@ class SequelizeSmartLocksRepository extends SequelizeRepositoryBase<SmartLock> i
   updateDeviceProfileId = async (id: string, deviceId: number): Promise<SmartLock | undefined> => {
     return await this.crud.update(id, {
       [`${SequelizeInstance.modelNames.deviceProfile}Id`]: deviceId
+    })
+  }
+
+  updateAuthorizationRule = async (id: string, rule: { id: number, args: string }): Promise<SmartLock | undefined> => {
+    return await this.crud.update(id, {
+      [SequelizeInstance.getId(SequelizeInstance.modelNames.authorizationRule)]: rule.id,
+      authorizationRuleArgs: rule.args
     })
   }
   

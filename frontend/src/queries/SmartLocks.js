@@ -9,6 +9,10 @@ const READ_ALL_LOCKS = gql`
       device {
         connectionStatus
       }
+      authorizationRule {
+        id
+      }      
+      authorizationRuleArgs
     }
   }
 `
@@ -29,8 +33,15 @@ const DELETE_LOCK = gql`
   }
 `
 
+const UPDATE_SMART_LOCK_RULE = gql`
+  mutation UpdateSmartLockRule($id: String, $ruleId: Int, $ruleArgs: String) {
+    updateSmartLockRule(id: $id, ruleId: $ruleId, ruleArgs: $ruleArgs)
+  }
+`
+
 export {
   READ_ALL_LOCKS,
   CREATE_LOCK,
-  DELETE_LOCK
+  DELETE_LOCK,
+  UPDATE_SMART_LOCK_RULE
 }

@@ -21,8 +21,7 @@ abstract class SequelizeInstance {
     enumClaimTypeOption: 'EnumClaimTypeOption',
     smartLock: 'SmartLock',
     deviceProfile: 'DeviceProfile',
-    authorizationRule: 'AuthorizationRule',
-    authorizationRuleInstance: 'AuthorizationRuleInstance'
+    authorizationRule: 'AuthorizationRule'
   }
 
   private static compositeUniques = {
@@ -164,7 +163,8 @@ abstract class SequelizeInstance {
       lockStatus: {
         type: DataTypes.ENUM('locked', 'unlocked'),
         defaultValue: 'locked'
-      }
+      },
+      authorizationRuleArgs: DataTypes.STRING
     })
 
     const AuthorizationRule = this.sequelize.define(SequelizeInstance.modelNames.authorizationRule, {
@@ -176,11 +176,7 @@ abstract class SequelizeInstance {
       deployedRule: DataTypes.STRING,
       savedFormSchema: DataTypes.STRING,
       deployedFormSchema: DataTypes.STRING,
-    })
-
-    const AuthorizationRuleInstance = this.sequelize.define(SequelizeInstance.modelNames.authorizationRuleInstance, {
-      argsValue: DataTypes.STRING
-    })
+    }) 
 
     this.registerAssociation(
       SequelizeInstance.modelNames.adminPrivilegePreset,
@@ -249,28 +245,15 @@ abstract class SequelizeInstance {
 
     this.registerAssociation(
       SequelizeInstance.modelNames.authorizationRule,
-      'instances',
-      AuthorizationRule.hasMany(AuthorizationRuleInstance, { 
-        onDelete: 'CASCADE' 
+      'smartLocks',
+      AuthorizationRule.hasMany(SmartLock, { 
+        onDelete: 'SET NULL'
       })
     )
-    this.registerAssociation(
-      SequelizeInstance.modelNames.authorizationRuleInstance,
-      'authorizationRule',
-      AuthorizationRuleInstance.belongsTo(AuthorizationRule)
-    )
-
     this.registerAssociation(
       SequelizeInstance.modelNames.smartLock,
-      'authorizationRuleInstance',
-      SmartLock.belongsTo(AuthorizationRuleInstance, {
-        onDelete: 'CASCADE'
-      })
-    )
-    this.registerAssociation(
-      SequelizeInstance.modelNames.authorizationRuleInstance,
-      'smartLock',
-      AuthorizationRuleInstance.hasOne(SmartLock)
+      'authorizationRule',
+      SmartLock.belongsTo(AuthorizationRule)
     )
 
     await this.sequelize.sync()

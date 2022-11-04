@@ -9,18 +9,25 @@ import { RootComponent } from "../components/RootComponent"
 import { Project, SyntaxKind, TypeReferenceNode, ArrayTypeNode } from "ts-morph"
 import { useParams } from "react-router-dom"
 import { useMutation, useQuery } from "@apollo/client"
-import { APPLY_SCHEMA, DEPLOY_AUTHORIZATION_RULE, READ_AUTHORIZATION_RULE_BY_ID, SAVE_AUTHORIZATION_RULE, TEST_AUTHORIZATION_RULE, UPDATE_AUTHORIZATION_RULE } from "../queries/AuthorizationRule"
+import { APPLY_SCHEMA, DEPLOY_AUTHORIZATION_RULE, READ_AUTHORIZATION_RULE_BY_ID, READ_AUTHORIZATION_RULE_NAME, SAVE_AUTHORIZATION_RULE, TEST_AUTHORIZATION_RULE, UPDATE_AUTHORIZATION_RULE } from "../queries/AuthorizationRule"
 import { TabPanel } from "../components/TabPanel"
 import { AuthorizationRuleArgsForm } from "../components/AuthorizationRuleArgsForm"
 import { ClaimsTable } from "../components/ClaimsTable"
 import theme from "../components/UItheme"
 import { READ_ALL_CLAIM_TYPES } from "../queries/Accounts"
 
-const RuleName = ({ id, name }) => {
+const RuleName = ({ id }) => {
   const [isEditing, setIsEditing] = useState(false)
-  const [updateAuthorizationRule, { loading }] = useMutation(UPDATE_AUTHORIZATION_RULE, {
-    refetchQueries: [{ query: READ_AUTHORIZATION_RULE_BY_ID }]
+  const {
+    data: { authorizationRules: [{ name }] } = { authorizationRules: [{}] },
+    loading: nameLoading,
+    refetch
+  } = useQuery(READ_AUTHORIZATION_RULE_NAME, {
+    variables: { id },
+    skip: Number.isNaN(id),
+    fetchPolicy: 'no-cache'
   })
+  const [updateAuthorizationRule, { loading: updateLoading }] = useMutation(UPDATE_AUTHORIZATION_RULE)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -36,8 +43,12 @@ const RuleName = ({ id, name }) => {
       }
     })
 
+    await refetch()
+
     setIsEditing(false)
   }
+
+  if (nameLoading) return <></>
 
   return (
     <Stack direction="row" gap={1} alignItems="center">
@@ -45,7 +56,7 @@ const RuleName = ({ id, name }) => {
         ? (
           <form onSubmit={handleSubmit}>
             <TextField size="small" name="ruleName" defaultValue={name} />
-            {!loading && (
+            {!updateLoading && (
               <>
                 <IconButton type="submit">
                   <Save />
@@ -192,7 +203,7 @@ const AuthorizationRuleEditor = () => {
     <Stack sx={{ height: "100%", width: "100%" }}>
       <Stack flexDirection="row" sx={{ py: 1, px: 2, backgroundColor: theme.palette.primary.main, color: "white" }} gap={1} alignItems="center">
         <Typography><b>Authorization Rule Editor</b> -&nbsp;</Typography>
-        <RuleName id={rule?.id} name={rule?.name} />
+        <RuleName id={Number.parseInt(rule?.id)} />
         <Box sx={{ flexGrow: 1 }} />
         {(rule?.savedRule !== editorContent && !saveAuthorizationRuleLoading) && (
           <Typography>There are unsaved changes.</Typography>

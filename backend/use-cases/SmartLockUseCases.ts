@@ -1,6 +1,7 @@
 import { NotImplementedError } from "../common/Errors"
-import { ClaimInstance } from "../domain-model/entities/ClaimInstance"
+import { ClaimInstance, ClaimInstanceUnion } from "../domain-model/entities/ClaimInstance"
 import { DeviceProfile } from "../domain-model/entities/DeviceProfile"
+import { SmartLock } from "../domain-model/entities/SmartLock"
 import { DeviceMessagingService } from "../domain-model/services/DeviceMessagingService"
 import { DigitalSignatureService } from "../domain-model/services/DigitalSignatureService"
 import { KeyValueService } from "../domain-model/services/KeyValueService"
@@ -49,15 +50,19 @@ class SmartLockUseCases {
     this.deviceStatusStore.set(deviceProfileId.toString(), 'connected')
   }
 
-  sendCommand = async (request: { smartLockId: string, command: string }, claims: ClaimInstance[]) => {
-    const smartLock = await this.repository.readByIdIncludeDevice(request.smartLockId)
+  sendCommand = async (request: { smartLockId: string, command: string }, claims: ClaimInstanceUnion[]) => {
+    const smartLock = await this.repository.readByIdIncludeDeviceAndAuthorizationRule(request.smartLockId)
 
-    if (!smartLock?.rule) throw new NotImplementedError()
+    if (!smartLock?.authorizationRule || !smartLock?.authorizationRuleArgs) throw new NotImplementedError()
     if (!smartLock?.device?.macAddress) throw new NotImplementedError()
 
-    const result = this.rulesEngineService.checkAuthorization(claims, smartLock.rule)
+    const result = this.rulesEngineService.checkAuthorization(
+      claims, 
+      smartLock.authorizationRule.deployedRule, 
+      smartLock.authorizationRuleArgs
+    )
 
-    if (result.success) {
+    if (result.authorized) {
       this.deviceMessagingService.send(smartLock.device, request.command)
     } else {
       if (!result.errorMessage) throw new NotImplementedError()
@@ -66,6 +71,12 @@ class SmartLockUseCases {
   }
 
   update = this.repository.update
+
+  updateSmartLockRule = async (params: { id: string, ruleId: number, ruleArgs: string }): Promise<void> => {
+    const { id, ruleId, ruleArgs } = params
+    await this.repository.updateAuthorizationRule(id, { id: ruleId, args: ruleArgs })
+  }
+
   delete = this.repository.delete
 }
 

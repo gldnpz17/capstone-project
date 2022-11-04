@@ -1,4 +1,3 @@
-import { AuthorizationRuleInstance } from "../entities/AuthorizationRuleInstance";
 import { ClaimInstance, ClaimInstanceUnion } from "../entities/ClaimInstance";
 import { VM } from "vm2"
 import { transpile } from "typescript"
@@ -15,8 +14,8 @@ class ExecutionResult {
 }
 
 interface RulesEngineService {
-  checkAuthorization(claims: ClaimInstanceUnion[], ruleInstance: AuthorizationRuleInstance, extractRule?: (authorizationRule: AuthorizationRuleInstance) => string): ExecutionResult,
-  applySchema(formValues: string, formSchema: string): string
+  checkAuthorization(claims: ClaimInstanceUnion[], rule: string, args: string): ExecutionResult,
+  applySchema(formSchema: string, formValues: string): string
   generateFormSchema(code: string): string
 }
 
@@ -47,8 +46,8 @@ type FormSchema = {
 type primitives = string | number | boolean
 
 class TypeScriptRulesEngineService implements RulesEngineService {
-  checkAuthorization(claims: ClaimInstanceUnion[], ruleInstance: AuthorizationRuleInstance, extractRule?: (authorizationRule: AuthorizationRuleInstance) => string): ExecutionResult {
-    const transpiledCode = transpile(extractRule ? extractRule(ruleInstance) : ruleInstance.authorizationRule.deployedRule)
+  checkAuthorization(claims: ClaimInstanceUnion[], rule: string, args: string): ExecutionResult {
+    const transpiledCode = transpile(rule)
 
     const claimsObject = {}
     claims.forEach(claim => {
@@ -60,7 +59,7 @@ class TypeScriptRulesEngineService implements RulesEngineService {
     let denyMessage: string | null = null
     let errorMessage: string | null = null
     const logs: string[] = []
-    const args = JSON.parse(ruleInstance.argsValue)
+    const parsedArgs = JSON.parse(args)
     const vm = new VM({
       timeout: 1000,
       allowAsync: false,
@@ -81,7 +80,7 @@ class TypeScriptRulesEngineService implements RulesEngineService {
             },
             claims: claimsObject
           },
-          args
+          args: parsedArgs
         }
       }
     })

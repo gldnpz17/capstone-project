@@ -30,7 +30,8 @@ const typeDefs = gql`
     wifiPassword: String
     lockStatus: LockStatus
     device: DeviceProfile
-    authorizationRuleInstance: AuthorizationRuleInstance
+    authorizationRule: AuthorizationRule
+    authorizationRuleArgs: String
   }
 
   type EnumClaimTypeOption {
@@ -79,14 +80,7 @@ const typeDefs = gql`
     savedFormSchema: String
     deployedFormSchema: String
     hasPendingChanges: Boolean
-    instances: [AuthorizationRuleInstance]
-  }
-
-  type AuthorizationRuleInstance {
-    id: ID!
-    argsValue: String
-    authorizationRule: AuthorizationRule
-    smartLock: SmartLock
+    smartLocks: [SmartLock]
   }
 
   type PasswordAuthenticationResult {
@@ -117,7 +111,6 @@ const typeDefs = gql`
     smartLocks(${collectionArgs({ keyType: 'String' })}): [SmartLock]
     deviceProfiles(${collectionArgs({ keyType: 'Int' })}): [DeviceProfile]
     authorizationRules(${collectionArgs({ keyType: 'Int' })}): [AuthorizationRule]
-    authorizationRuleInstances(${collectionArgs({ keyType: 'Int' })}): [AuthorizationRuleInstance]
   }
 
   enum CLAIM_TYPE_DATA_TYPE {
@@ -166,6 +159,7 @@ const typeDefs = gql`
     connectSmartLock(id: ID!): DeviceProfile
     confirmDevice(deviceId: ID!, macAddress: String): DeviceProfile
     pingDevice(id: ID!): Boolean
+    updateSmartLockRule(id: String, ruleId: Int, ruleArgs: String): Boolean
     # Authorization Rules
     createAuthorizationRule: AuthorizationRule
     saveAuthorizationRuleChanges(id: ID!, authorizationRule: String): Boolean

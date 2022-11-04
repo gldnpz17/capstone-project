@@ -1,17 +1,18 @@
 import { NotImplementedError } from "../common/Errors"
 import { ApplicationConfiguration } from "../domain-model/common/ApplicationConfiguration"
 import { AuthorizationRule } from "../domain-model/entities/AuthorizationRule"
-import { AuthorizationRuleInstance } from "../domain-model/entities/AuthorizationRuleInstance"
 import { BooleanClaim, ClaimInstance, EnumClaim, NumberClaim, StringClaim } from "../domain-model/entities/ClaimInstance"
 import { RulesEngineService } from "../domain-model/services/RulesEngineService"
 import { AuthorizationRulesRepository } from "../repositories/AuthorizationRulesRepository"
 import { ClaimTypeRepository } from "../repositories/ClaimTypeRepository"
+import { SmartLocksRepository } from "../repositories/SmartLocksRepository"
 
 class AuthorizationRuleUseCases {
   constructor(
     private configuration: ApplicationConfiguration,
     private repository: AuthorizationRulesRepository,
     private claimTypeRepository: ClaimTypeRepository,
+    private smartLocksRepository: SmartLocksRepository,
     private rulesEngineService: RulesEngineService
   ) { }
 
@@ -42,7 +43,7 @@ class AuthorizationRuleUseCases {
   }
 
   deploy = async (id: number): Promise<void> => {
-    const authorizationRule = await this.repository.readById(id)
+    const authorizationRule = await this.repository.readByIdIncludeSmartLocks(id)
 
     if (!authorizationRule) return
 
@@ -52,6 +53,18 @@ class AuthorizationRuleUseCases {
       deployedRule: savedRule,
       deployedFormSchema: savedFormSchema
     })
+
+    if (authorizationRule.smartLocks) {
+      await Promise.all(authorizationRule.smartLocks.map(async (lock) => {
+        if (!lock.authorizationRuleArgs) return
+        await this.smartLocksRepository.update(lock.id, {
+          authorizationRuleArgs: this.rulesEngineService.applySchema(
+            savedFormSchema,
+            lock.authorizationRuleArgs
+          )
+        })
+      }))
+    }
   }
 
   applySchema = async (params: { schema: string, values: string }): Promise<string> => {
@@ -87,13 +100,7 @@ class AuthorizationRuleUseCases {
 
     if (!rule) throw new NotImplementedError()
 
-    const ruleInstance = new AuthorizationRuleInstance(rule, args)
-
-    const result = this.rulesEngineService.checkAuthorization(
-      claimObjects, 
-      ruleInstance, 
-      (rule: AuthorizationRuleInstance) => rule.authorizationRule.savedRule
-    )
+    const result = this.rulesEngineService.checkAuthorization(claimObjects, rule.savedRule, args)
 
     return result
   }

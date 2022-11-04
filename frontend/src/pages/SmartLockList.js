@@ -12,7 +12,6 @@ import { handleForm } from '../common/handleForm'
 import { useModal } from '../hooks/useModal';
 import SmartLockSetting from './SmartLockSetting';
 
-
 function QuickSearchToolbar() {
   return (
     <Box
@@ -64,11 +63,11 @@ export default function SmartLockList() {
       renderCell: (cellValues) => {
         return (
           <div>
-            <button onClick={openSettingModal({ lock: cellValues.raw })} type="button" class="act-btn edit-btn">
-              <i class="fas fa-edit"></i>
+            <button onClick={openSettingModal({ lock: cellValues.row.raw })} type="button" className="act-btn edit-btn">
+              <i className="fas fa-edit"></i>
             </button>
-            <button onClick={() => deleteLock({ variables: { id: cellValues.id } })} type="button" class="act-btn del-btn">
-              <i class="fa fa-trash"></i>
+            <button onClick={() => deleteLock({ variables: { id: cellValues.id } })} type="button" className="act-btn del-btn">
+              <i className="fa fa-trash"></i>
             </button>
           </div>
         );
@@ -93,7 +92,7 @@ export default function SmartLockList() {
       <ThemeProvider theme={theme}>
         <div className="cover-addlock">
           <Typography className="header" gutterBottom variant="h5" align="left" style={{ fontWeight: 800 }} color="#333333">
-            <i class="fas fa-lock"></i>Add New Lock
+            <i className="fas fa-lock"></i>Add New Lock
           </Typography> 
 
           <form onSubmit={handleSubmit}>

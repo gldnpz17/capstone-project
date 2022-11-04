@@ -16,6 +16,10 @@ abstract class EntityMapperBase<TEntity> {
   }
 }
 
+abstract class ShallowMapperBase<TEntity> {
+  abstract map(original: any): TEntity
+}
+
 class BaseExtender<TEntity> {
   constructor(
     protected item: TEntity
@@ -186,25 +190,41 @@ class ClaimInstanceMapper extends EntityMapperBase<ClaimInstanceUnion> {
 class SmartLockExtender extends BaseExtender<SmartLock> {
   constructor(
     item: SmartLock,
-    private deviceProfileMapper: DeviceProfileMapper
+    private deviceProfileMapper: DeviceProfileMapper,
+    private shallowAuthorizationRuleMapper: ShallowAuthorizationRuleMapper
   ) { super(item) }
 
   addDeviceProfile(instance: any): this {
     this.item.device = this.deviceProfileMapper.map(instance).get()
     return this
   }
+
+  addAuthorizationRule(instance: any): this {
+    this.item.authorizationRule = this.shallowAuthorizationRuleMapper.map(instance)
+    return this
+  }
+}
+
+class ShallowSmartLockMapper extends ShallowMapperBase<SmartLock> {
+  map(original: any): SmartLock {
+    const { id, name, wifiSsid, wifiPassword, lockStatus, authorizationRuleArgs } = original
+    return new SmartLock(id, name, wifiSsid, wifiPassword, lockStatus, authorizationRuleArgs)
+  }
 }
 
 class SmartLockMapper extends EntityMapperBase<SmartLock> {
   constructor(
-    private deviceProfileMapper: DeviceProfileMapper
+    private deviceProfileMapper: DeviceProfileMapper,
+    private shallowAuthorizationRuleMapper: ShallowAuthorizationRuleMapper,
+    private mapper: ShallowSmartLockMapper
   ) { super() }
 
   override map(original: any): SmartLockExtender {
-    const { id, name, wifiSsid, wifiPassword, lockStatus } = original
+    
     return new SmartLockExtender(
-      new SmartLock(id, name, wifiSsid, wifiPassword, lockStatus),
-      this.deviceProfileMapper
+      this.mapper.map(original),
+      this.deviceProfileMapper,
+      this.shallowAuthorizationRuleMapper
     )
   }
 }
@@ -218,19 +238,36 @@ class DeviceProfileMapper extends EntityMapperBase<DeviceProfile> {
   }
 }
 
-class AuthorizationRuleMapper extends EntityMapperBase<AuthorizationRule> {
-  override map(original: any): BaseExtender<AuthorizationRule> {
-    const {
-      id,
-      name,
-      savedRule, 
-      deployedRule,
-      savedFormSchema,
-      deployedFormSchema
-    } = original
+class AuthorizationRuleExtender extends BaseExtender<AuthorizationRule> {
+  constructor(
+    item: AuthorizationRule,
+    private shallowSmartLockMapper: ShallowSmartLockMapper
+  ) { super(item) }
 
-    return new BaseExtender(
-      new AuthorizationRule(id, name, savedRule, deployedRule, savedFormSchema, deployedFormSchema, savedRule == deployedRule)
+  addSmartLocks(instances: any[]): this {
+    this.item.smartLocks = instances.map(this.shallowSmartLockMapper.map)
+    return this
+  }
+}
+
+class ShallowAuthorizationRuleMapper extends ShallowMapperBase<AuthorizationRule> {
+  map(original: any): AuthorizationRule {
+    const { id, name, savedRule, deployedRule, savedFormSchema, deployedFormSchema } = original
+
+    return new AuthorizationRule(id, name, savedRule, deployedRule, savedFormSchema, deployedFormSchema, savedRule == deployedRule)
+  }
+}
+
+class AuthorizationRuleMapper extends EntityMapperBase<AuthorizationRule> {
+  constructor(
+    private mapper: ShallowAuthorizationRuleMapper,
+    private shallowSmartLockMapper: ShallowSmartLockMapper
+  ) { super() }
+
+  override map(original: any): AuthorizationRuleExtender {
+    return new AuthorizationRuleExtender(
+      this.mapper.map(original),
+      this.shallowSmartLockMapper
     )
   }
 }
@@ -246,5 +283,7 @@ export {
   ClaimInstanceMapper,
   SmartLockMapper,
   DeviceProfileMapper,
-  AuthorizationRuleMapper
+  AuthorizationRuleMapper,
+  ShallowAuthorizationRuleMapper,
+  ShallowSmartLockMapper
 }
