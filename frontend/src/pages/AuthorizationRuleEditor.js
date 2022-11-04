@@ -37,6 +37,8 @@ const AuthorizationRuleEditor = () => {
   const [editorContent, setEditorContent] = useState()
   const [formState, setFormState] = useState({})
 
+  console.log(formState)
+
   const [applySchema, { loading: applySchemaLoading }] = useMutation(APPLY_SCHEMA, {
     variables: { schema: rule?.savedFormSchema, values: JSON.stringify(formState) }
   })
@@ -127,7 +129,7 @@ const AuthorizationRuleEditor = () => {
   return (
     <Stack sx={{ height: "100%", width: "100%" }}>
       <Stack flexDirection="row" sx={{ py: 1, px: 2, backgroundColor: theme.palette.primary.main, color: "white" }} gap={1} alignItems="center">
-        <Typography>Authorization Rule Editor - {rule?.name}</Typography>
+        <Typography><b>Authorization Rule Editor</b> - {rule?.name}</Typography>
         <Box sx={{ flexGrow: 1 }} />
         {(rule?.savedRule !== editorContent && !saveAuthorizationRuleLoading) && (
           <Typography>There are unsaved changes.</Typography>
@@ -180,20 +182,23 @@ const AuthorizationRuleEditor = () => {
                       <Tab label="Arguments" />
                     </Tabs>
                   </Box>
-                  <Box sx={{ flexGrow: 1, position: "relative", overflowY: "scroll" }}>
-                    <TabPanel value={tab} index={0}>
-                      <Box sx={{ py: 2 }}>
-                        <ClaimsTable {...{ claims, onAddClaim, onUpdateClaim, onDeleteClaim }} />
-                      </Box>
-                    </TabPanel>
-                    <TabPanel value={tab} index={1}>
-                      <Stack sx={{ py: 2 }}>
-                        {applySchemaLoading && (
-                          <Typography>Applying new schema...</Typography>
-                        )}
-                        <AuthorizationRuleArgsForm {...{ schema, formState, setFormState }} />
-                      </Stack>
-                    </TabPanel>
+                  <Box sx={{ flexGrow: 1 }}>
+                    {/*CSS fuckery plz don't ask why.*/}
+                    <Box sx={{ height: 0, minHeight: "100%", overflowY: "scroll" }}>
+                      <TabPanel value={tab} index={0}>
+                        <Box sx={{ py: 2 }}>
+                          <ClaimsTable {...{ claims, onAddClaim, onUpdateClaim, onDeleteClaim }} />
+                        </Box>
+                      </TabPanel>
+                      <TabPanel value={tab} index={1}>
+                        <Stack sx={{ py: 2 }}>
+                          {applySchemaLoading && (
+                            <Typography>Applying new schema...</Typography>
+                          )}
+                          <AuthorizationRuleArgsForm {...{ schema, formState, setFormState }} />
+                        </Stack>
+                      </TabPanel>
+                    </Box>
                   </Box>
                 </Stack>
               </Grid>

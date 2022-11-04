@@ -4,13 +4,13 @@ function TabPanel({ children, sx, value, index, ...other }) {
   return (
     <div
       role="tabpanel"
-      style={{ height: 0, minHeight: "100%" }}
+      style={{ maxHeight: "100%" }}
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
       {...other}
     >
       {value === index && (
-        <Box sx={{ height: "100%" }} >
+        <Box sx={{ maxHeight: "100%" }} >
           {children}
         </Box>
       )}

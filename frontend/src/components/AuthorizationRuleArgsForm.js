@@ -3,7 +3,7 @@ import { TextField, Checkbox, Stack, Box, Typography, Button, IconButton, Card }
 import { Delete, Add } from "@mui/icons-material"
 import { camelCaseToTitleCase } from "../common/camelCaseToTitleCase"
 
-const FormGroup = ({ groupSchema, state, setState, isRoot = false }) => {
+const FormGroup = ({ groupSchema, state, setState}) => {
     useEffect(() => {
         if (!state) setState({})
     }, [state])
@@ -12,7 +12,7 @@ const FormGroup = ({ groupSchema, state, setState, isRoot = false }) => {
         setState({ ...state, [fieldName]: value })
     }, [state, setState])
 
-    const content = (
+    return (
         <Stack gap={2}>
             {state && Object.keys(groupSchema.fieldSchema).map(name => {
                 const schema = groupSchema.fieldSchema[name]
@@ -23,7 +23,11 @@ const FormGroup = ({ groupSchema, state, setState, isRoot = false }) => {
                             {(() => {
                                 switch (schema.type) {
                                     case 'group':
-                                        return <FormGroup groupSchema={schema} state={state[name]} setState={setField(name)} />
+                                        return (
+                                            <Card variant="outlined" sx={{ px: 2, py: 1 }}>
+                                                <FormGroup groupSchema={schema} state={state[name]} setState={setField(name)} />
+                                            </Card>
+                                        )
                                     case 'list':
                                         return <FormList listSchema={schema} state={state[name]} setState={setField(name)} />
                                     case 'primitive':
@@ -36,16 +40,6 @@ const FormGroup = ({ groupSchema, state, setState, isRoot = false }) => {
             })}
         </Stack>
     )
-
-    if (isRoot) {
-        return content
-    } else {
-        return (
-            <Card variant="outlined" sx={{ px: 2, py: 1 }}>
-                {content}
-            </Card>
-        )
-    }
 }
 
 const FormList = ({ listSchema, state, setState }) => {
@@ -79,7 +73,11 @@ const FormList = ({ listSchema, state, setState }) => {
                             {(() => {
                                 switch (schema.type) {
                                     case 'group':
-                                        return <FormGroup groupSchema={schema} state={state} setState={setItem(index)} />
+                                        return (
+                                            <Card variant="outlined" sx={{ px: 2, py: 1 }}>
+                                                <FormGroup groupSchema={schema} state={state} setState={setItem(index)} />
+                                            </Card>
+                                        ) 
                                     case 'list':
                                         return <FormList listSchema={schema} state={state} setState={setItem(index)} />
                                     case 'primitive':
@@ -131,7 +129,7 @@ const FormPrimitive = ({ primitiveSchema, state, setState }) => {
         }
     }, [state])
 
-    const mappedFieldProps = { size: "small", minWidth: 0, fullWidth: true, ...fieldProps }
+    const mappedFieldProps = { size: "small", fullWidth: true, ...fieldProps }
 
     switch (primitiveSchema.primitiveType) {
         case "string":
@@ -145,13 +143,37 @@ const FormPrimitive = ({ primitiveSchema, state, setState }) => {
     }
 }
 
-const AuthorizationRuleArgsForm = ({ schema, formState, setFormState }) => (
-    <FormGroup 
-        groupSchema={schema.root} 
-        state={formState} 
-        setState={(newState) => setFormState((oldState) => ({ ...oldState, ...newState }))}
-        isRoot
-    />
-)
+const removeNullFromObject = (obj) => {
+    const newObj = {}
+    for (const key in obj) {
+    if (obj[key] === null || obj[key] === undefined) continue
+
+    if (typeof(obj[key]) === 'object' && !Array.isArray(obj[key])) {
+        newObj[key] = removeNullFromObject(obj[key])
+        continue
+    }
+    
+    newObj[key] = obj[key]
+    }
+
+    return newObj
+}
+
+const AuthorizationRuleArgsForm = ({ schema, formState, setFormState }) => {
+    const handleSetState = useCallback((newState) => {
+        setFormState((oldState) => {
+            const newStateWithoutNulls = removeNullFromObject(newState)
+            return ({ ...oldState, ...newStateWithoutNulls })
+        })
+    }, [setFormState])
+
+    return (
+        <FormGroup 
+            groupSchema={schema.root} 
+            state={formState} 
+            setState={handleSetState}
+        />
+    )
+}
 
 export { AuthorizationRuleArgsForm }
