@@ -2,14 +2,14 @@ import '../styles/AuthorizationRuleEditor.css'
 import Editor from "@monaco-editor/react"
 import { PlayArrow, TextFields } from "@mui/icons-material"
 import { Button, Grid, ListItem, Stack, Tab, Tabs, Typography, IconButton, TextField, CircularProgress } from "@mui/material"
-import { Edit, Save, Close } from "@mui/icons-material"
+import { Edit, Save, Close, RocketLaunch } from "@mui/icons-material"
 import { Box } from "@mui/system"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { RootComponent } from "../components/RootComponent"
 import { Project, SyntaxKind, TypeReferenceNode, ArrayTypeNode } from "ts-morph"
 import { useParams } from "react-router-dom"
 import { useMutation, useQuery } from "@apollo/client"
-import { APPLY_SCHEMA, READ_AUTHORIZATION_RULE_BY_ID, SAVE_AUTHORIZATION_RULE, TEST_AUTHORIZATION_RULE, UPDATE_AUTHORIZATION_RULE } from "../queries/AuthorizationRule"
+import { APPLY_SCHEMA, DEPLOY_AUTHORIZATION_RULE, READ_AUTHORIZATION_RULE_BY_ID, SAVE_AUTHORIZATION_RULE, TEST_AUTHORIZATION_RULE, UPDATE_AUTHORIZATION_RULE } from "../queries/AuthorizationRule"
 import { TabPanel } from "../components/TabPanel"
 import { AuthorizationRuleArgsForm } from "../components/AuthorizationRuleArgsForm"
 import { ClaimsTable } from "../components/ClaimsTable"
@@ -178,13 +178,21 @@ const AuthorizationRuleEditor = () => {
     setLogs([...logs, ...logMessages])
   }, [testAuthorizationRule, logs])
 
+  const [deployAuthorizationRule] = useMutation(DEPLOY_AUTHORIZATION_RULE, {
+    variables: { id: ruleId },
+    refetchQueries: [{ query: READ_AUTHORIZATION_RULE_BY_ID }]
+  })
+
+  const hasBeenDeployed = useMemo(() => {
+    if (!rule) return false
+    return rule.savedRule === rule.deployedRule
+  }, [rule])
+
   return (
     <Stack sx={{ height: "100%", width: "100%" }}>
       <Stack flexDirection="row" sx={{ py: 1, px: 2, backgroundColor: theme.palette.primary.main, color: "white" }} gap={1} alignItems="center">
-        <Stack direction="row" alignItems="center">
-          <Typography><b>Authorization Rule Editor</b> -&nbsp;</Typography>
-          <RuleName id={rule?.id} name={rule?.name} />
-        </Stack>
+        <Typography><b>Authorization Rule Editor</b> -&nbsp;</Typography>
+        <RuleName id={rule?.id} name={rule?.name} />
         <Box sx={{ flexGrow: 1 }} />
         {(rule?.savedRule !== editorContent && !saveAuthorizationRuleLoading) && (
           <Typography>There are unsaved changes.</Typography>
@@ -193,6 +201,7 @@ const AuthorizationRuleEditor = () => {
           <Typography>Saving changes...</Typography>
         )}
         <Button color="secondary" variant="contained" startIcon={<PlayArrow />} onClick={handleRun}>Run</Button>
+        <Button color="secondary" variant="contained" disabled={hasBeenDeployed} startIcon={<RocketLaunch />} onClick={deployAuthorizationRule}>Deploy</Button>
       </Stack>
       {((ruleLoading || claimTypesLoading) || !schema)
         ? (
