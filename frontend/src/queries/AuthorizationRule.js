@@ -61,6 +61,12 @@ const APPLY_SCHEMA = gql`
   }
 `
 
+const UPDATE_AUTHORIZATION_RULE = gql`
+  mutation UpdateAuthorizationRuleName($id: ID!, $authorizationRule: AuthorizationRuleInput) {
+    updateAuthorizationRule(id: $id, authorizationRule: $authorizationRule)
+  }
+`
+
 export {
   CREATE_AUTHORIZATION_RULE,
   READ_ALL_AUTHORIZATION_RULES,
@@ -68,5 +74,6 @@ export {
   SAVE_AUTHORIZATION_RULE,
   DEPLOY_AUTHORIZATION_RULE,
   APPLY_SCHEMA,
-  TEST_AUTHORIZATION_RULE
+  TEST_AUTHORIZATION_RULE,
+  UPDATE_AUTHORIZATION_RULE
 }

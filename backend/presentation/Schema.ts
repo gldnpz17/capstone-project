@@ -169,7 +169,7 @@ const typeDefs = gql`
     # Authorization Rules
     createAuthorizationRule: AuthorizationRule
     saveAuthorizationRuleChanges(id: ID!, authorizationRule: String): Boolean
-    updateAuthorizationRule(id: ID!, name: AuthorizationRuleInput): Boolean
+    updateAuthorizationRule(id: ID!, authorizationRule: AuthorizationRuleInput): Boolean
     deployAuthorizationRule(id: ID!): Boolean
     deleteAuthorizationRule(id: ID!): Boolean
     testAuthorizationRule(id: ID!, args: String, claims: [ClaimInput]): ExecutionResult

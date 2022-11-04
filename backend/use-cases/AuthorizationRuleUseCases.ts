@@ -36,9 +36,9 @@ class AuthorizationRuleUseCases {
     })
   }
 
-  update = async (id: number, rule: { name: string }) => {
-    const { name } = rule
-    return await this.repository.update(id, { name })
+  update = async (params: { id: number, authorizationRule: { name: string }}) => {
+    const { id, authorizationRule } = params
+    await this.repository.update(id, authorizationRule)
   }
 
   deploy = async (id: number): Promise<void> => {

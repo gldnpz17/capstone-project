@@ -20,7 +20,7 @@ class AuthorizationRuleResolvers extends ResolversBase {
     return {
       createAuthorizationRule: this.mapUseCase(this.useCases.create),
       saveAuthorizationRuleChanges: this.mapUseCase(this.useCases.saveChanges),
-      updateAuthorizationRule: this.mapUseCase(this.useCases.update, { spread: true }),
+      updateAuthorizationRule: this.mapUseCase(this.useCases.update),
       deployAuthorizationRule: this.mapUseCase(this.useCases.deploy, { spread: true }),
       deleteAuthorizationRule: this.mapUseCase(this.useCases.delete, { spread: true }),
       applySchema: this.mapUseCase(this.useCases.applySchema),

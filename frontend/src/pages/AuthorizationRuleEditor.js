@@ -1,19 +1,73 @@
 import '../styles/AuthorizationRuleEditor.css'
 import Editor from "@monaco-editor/react"
-import { PlayArrow } from "@mui/icons-material"
-import { Button, Grid, ListItem, Stack, Tab, Tabs, Typography } from "@mui/material"
+import { PlayArrow, TextFields } from "@mui/icons-material"
+import { Button, Grid, ListItem, Stack, Tab, Tabs, Typography, IconButton, TextField, CircularProgress } from "@mui/material"
+import { Edit, Save, Close } from "@mui/icons-material"
 import { Box } from "@mui/system"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { RootComponent } from "../components/RootComponent"
 import { Project, SyntaxKind, TypeReferenceNode, ArrayTypeNode } from "ts-morph"
 import { useParams } from "react-router-dom"
 import { useMutation, useQuery } from "@apollo/client"
-import { APPLY_SCHEMA, READ_AUTHORIZATION_RULE_BY_ID, SAVE_AUTHORIZATION_RULE, TEST_AUTHORIZATION_RULE } from "../queries/AuthorizationRule"
+import { APPLY_SCHEMA, READ_AUTHORIZATION_RULE_BY_ID, SAVE_AUTHORIZATION_RULE, TEST_AUTHORIZATION_RULE, UPDATE_AUTHORIZATION_RULE } from "../queries/AuthorizationRule"
 import { TabPanel } from "../components/TabPanel"
 import { AuthorizationRuleArgsForm } from "../components/AuthorizationRuleArgsForm"
 import { ClaimsTable } from "../components/ClaimsTable"
 import theme from "../components/UItheme"
 import { READ_ALL_CLAIM_TYPES } from "../queries/Accounts"
+
+const RuleName = ({ id, name }) => {
+  const [isEditing, setIsEditing] = useState(false)
+  const [updateAuthorizationRule, { loading }] = useMutation(UPDATE_AUTHORIZATION_RULE, {
+    refetchQueries: [{ query: READ_AUTHORIZATION_RULE_BY_ID }]
+  })
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    const ruleName = e.target.ruleName.value
+
+    await updateAuthorizationRule({
+      variables: {
+        id,
+        authorizationRule: {
+          name: ruleName
+        }
+      }
+    })
+
+    setIsEditing(false)
+  }
+
+  return (
+    <Stack direction="row" gap={1} alignItems="center">
+      {isEditing
+        ? (
+          <form onSubmit={handleSubmit}>
+            <TextField size="small" name="ruleName" defaultValue={name} />
+            {!loading && (
+              <>
+                <IconButton type="submit">
+                  <Save />
+                </IconButton>
+                <IconButton onClick={() => setIsEditing(false)}>
+                  <Close />
+                </IconButton>
+              </>
+            )}
+          </form>
+        )
+        : (
+          <>
+            <Typography>{name}</Typography>
+            <IconButton onClick={() => setIsEditing(true)}>
+              <Edit />
+            </IconButton>
+          </>
+        )}
+    </Stack>
+  )
+}
 
 const AuthorizationRuleEditor = () => {
   const { ruleId } = useParams()
@@ -36,8 +90,6 @@ const AuthorizationRuleEditor = () => {
 
   const [editorContent, setEditorContent] = useState()
   const [formState, setFormState] = useState({})
-
-  console.log(formState)
 
   const [applySchema, { loading: applySchemaLoading }] = useMutation(APPLY_SCHEMA, {
     variables: { schema: rule?.savedFormSchema, values: JSON.stringify(formState) }
@@ -129,7 +181,10 @@ const AuthorizationRuleEditor = () => {
   return (
     <Stack sx={{ height: "100%", width: "100%" }}>
       <Stack flexDirection="row" sx={{ py: 1, px: 2, backgroundColor: theme.palette.primary.main, color: "white" }} gap={1} alignItems="center">
-        <Typography><b>Authorization Rule Editor</b> - {rule?.name}</Typography>
+        <Stack direction="row" alignItems="center">
+          <Typography><b>Authorization Rule Editor</b> -&nbsp;</Typography>
+          <RuleName id={rule?.id} name={rule?.name} />
+        </Stack>
         <Box sx={{ flexGrow: 1 }} />
         {(rule?.savedRule !== editorContent && !saveAuthorizationRuleLoading) && (
           <Typography>There are unsaved changes.</Typography>
