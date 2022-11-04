@@ -43,6 +43,18 @@ const DEPLOY_AUTHORIZATION_RULE = gql`
     deployAuthorizationRule(id: $id)
   }
 `
+
+const TEST_AUTHORIZATION_RULE = gql`
+  mutation TestAuthorizationRule($id: ID!, $args: String, $claims: [ClaimInput]) {
+    testAuthorizationRule(id: $id, args: $args, claims: $claims) {
+      authorized
+      logMessages
+      denyMessage
+      errorMessage
+    }
+  }
+`
+
 const APPLY_SCHEMA = gql`
   mutation ApplySchema($schema: String, $values: String) {
     applySchema(schema: $schema, values: $values)
@@ -55,5 +67,6 @@ export {
   READ_AUTHORIZATION_RULE_BY_ID,
   SAVE_AUTHORIZATION_RULE,
   DEPLOY_AUTHORIZATION_RULE,
-  APPLY_SCHEMA
+  APPLY_SCHEMA,
+  TEST_AUTHORIZATION_RULE
 }

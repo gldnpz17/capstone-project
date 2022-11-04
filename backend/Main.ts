@@ -92,8 +92,8 @@ async function main() {
   bar: number[]
 }
 
-function authorize(args: Args) {
-
+function authorize(request: SmartLock.Request, args: Args) {
+  request.deny("Authorization rule not configured.")
 }`
 
   const config = new ApplicationConfiguration(

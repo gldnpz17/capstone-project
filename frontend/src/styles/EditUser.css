@@ -1,10 +1,9 @@
-* {
-    font-family: 'Poppins', sans-serif; /* Change your font family */
-  }
+body {
+  font-family: 'Poppins', sans-serif; /* Change your font family */
+}
 
   .edit-user-content-table {
     border-collapse: collapse;
-    margin: 25px 0;
     font-size: 14px;
     max-width: 100%;
     width: 50vw;

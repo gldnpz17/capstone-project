@@ -93,6 +93,11 @@ abstract class SequelizeInstance {
         allowNull: false,
         unique: true
       },
+      camelCaseName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+      },
       dataType: {
         type: DataTypes.ENUM('string', 'number', 'boolean', 'enum'),
         allowNull: false

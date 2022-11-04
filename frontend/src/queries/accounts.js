@@ -51,7 +51,12 @@ const READ_ALL_CLAIM_TYPES = gql`
     claimTypes {
       id
       name
+      camelCaseName
       dataType
+      options {
+        id
+        value
+      }
     }
   }
 `

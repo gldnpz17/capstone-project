@@ -15,7 +15,7 @@ class ExecutionResult {
 }
 
 interface RulesEngineService {
-  checkAuthorization(claims: ClaimInstanceUnion[], ruleInstance: AuthorizationRuleInstance): ExecutionResult,
+  checkAuthorization(claims: ClaimInstanceUnion[], ruleInstance: AuthorizationRuleInstance, extractRule?: (authorizationRule: AuthorizationRuleInstance) => string): ExecutionResult,
   applySchema(formValues: string, formSchema: string): string
   generateFormSchema(code: string): string
 }
@@ -47,30 +47,33 @@ type FormSchema = {
 type primitives = string | number | boolean
 
 class TypeScriptRulesEngineService implements RulesEngineService {
-  checkAuthorization(claims: ClaimInstanceUnion[], ruleInstance: AuthorizationRuleInstance): ExecutionResult {
-    const transpiledCode = transpile(ruleInstance.authorizationRule.deployedRule)
+  checkAuthorization(claims: ClaimInstanceUnion[], ruleInstance: AuthorizationRuleInstance, extractRule?: (authorizationRule: AuthorizationRuleInstance) => string): ExecutionResult {
+    const transpiledCode = transpile(extractRule ? extractRule(ruleInstance) : ruleInstance.authorizationRule.deployedRule)
 
     const claimsObject = {}
     claims.forEach(claim => {
       if (!claim.type) throw new NotImplementedError()
-      claimsObject[claim.type.name] = claim.value
+      claimsObject[claim.type.camelCaseName] = claim.value
     })
 
     let authorized: boolean = false
     let denyMessage: string | null = null
     let errorMessage: string | null = null
     const logs: string[] = []
+    const args = JSON.parse(ruleInstance.argsValue)
     const vm = new VM({
       timeout: 1000,
       allowAsync: false,
       sandbox: {
-        console: {
-          log: (str: string) => {
-            logs.push(str)
-          }
-        },
         globals: {
           request: {
+            log: (message: string) => {
+              if (typeof(message) != 'string') {
+                logs.push(JSON.stringify(message))
+              } else {
+                logs.push(message)
+              }
+            },
             allow: () => authorized = true,
             deny: (reason: string) => {
               authorized = false
@@ -78,7 +81,7 @@ class TypeScriptRulesEngineService implements RulesEngineService {
             },
             claims: claimsObject
           },
-          args: JSON.parse(ruleInstance.argsValue)
+          args
         }
       }
     })
@@ -87,7 +90,9 @@ class TypeScriptRulesEngineService implements RulesEngineService {
 `${transpiledCode}\n
 authorize(globals.request, globals.args)`)
 
-    logs.push(`Execution result: ${errorMessage ? 'error' : (authorized ? 'authorized' : 'unauthorized')}`)
+    let executionResultLog = `Execution result: ${errorMessage ? 'error' : (authorized ? 'authorized' : 'unauthorized')}`
+    if (!authorized && denyMessage) executionResultLog += ` (reason: ${denyMessage})`
+    logs.push(executionResultLog)
     
     return new ExecutionResult(authorized, logs, denyMessage, errorMessage)
   }

@@ -3,27 +3,9 @@ import "../styles/SmartLockSetting.css";
 import { Button, CardContent, Typography, Card, Grid, TextField, Tabs, Tab, Box, MenuItem } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import theme from '../components/UItheme';
-import { useQuery } from "@apollo/client";
-import { READ_ALL_AUTHORIZATION_RULES } from "../queries/AuthorizationRule";
-
-function TabPanel(props) {
-    const { children, value, index, ...other } = props;
-  
-    return (
-      <div
-        role="tabpanel"
-        hidden={value !== index}
-        id={`simple-tabpanel-${index}`}
-        {...other}
-      >
-        {value === index && (
-          <Box sx={{ p: 3 }}>
-            <Typography>{children}</Typography>
-          </Box>
-        )}
-      </div>
-    );
-  }
+import { useMutation, useQuery } from "@apollo/client";
+import { CREATE_AUTHORIZATION_RULE, READ_ALL_AUTHORIZATION_RULES } from "../queries/AuthorizationRule";
+import { TabPanel } from "../components/TabPanel";
 
 function SmartLockSetting({ lock }) {
     const [tab, setTab] = useState(0)
@@ -31,8 +13,16 @@ function SmartLockSetting({ lock }) {
         data: { authorizationRules } = {}
     } = useQuery(READ_ALL_AUTHORIZATION_RULES)
 
-    const createNewRule = () => {
-        
+    const [createAuthorizationRule] = useMutation(CREATE_AUTHORIZATION_RULE)
+
+    const createNewRule = async () => {
+        const { 
+            data: { 
+                createAuthorizationRule:  { id }
+            }
+        } = await createAuthorizationRule()
+
+        window.open(`/admin/editor/${id}`, '_blank').focus()
     }
 
     return(
@@ -87,8 +77,9 @@ function SmartLockSetting({ lock }) {
                                             </TextField>
                                         </Grid>
                                         <Grid item xs={4}>
-                                            <Button className="btn-addrule" type="submit" /*onClick={}*/ variant="contained" color="primary" value="" style={{ textTransform: 'none'}} fullWidth>
-                                            <Typography style={{ fontWeight: 500 }}>New Rule</Typography></Button>
+                                            <Button onClick={createNewRule} className="btn-addrule" type="submit" variant="contained" color="primary" value="" style={{ textTransform: 'none'}} fullWidth>
+                                                <Typography style={{ fontWeight: 500 }}>New Rule</Typography>
+                                            </Button>
                                         </Grid>
                                         <Grid item xs={12} spacing={1}>
                                             <TextField

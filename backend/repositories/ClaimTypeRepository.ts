@@ -5,10 +5,10 @@ import { SequelizeInstance } from "./common/SequelizeModels"
 import { SequelizeRepositoryBase } from "./common/SequelizeRepositoryBase"
 
 interface ClaimTypeRepository {
-  create(claimType: { name: string, dataType: ClaimTypeOptions }): Promise<ClaimType>
+  create(claimType: { name: string, camelCaseName: string, dataType: ClaimTypeOptions }): Promise<ClaimType>
   readAll(config: GenericReadAllConfig): Promise<ClaimType[]>
   readById(id: number): Promise<ClaimType | undefined>
-  update(id: number, instance: { name: string }): Promise<ClaimType | undefined>
+  update(id: number, instance: { name: string, camelCaseName: string }): Promise<ClaimType | undefined>
   delete(id: number): Promise<ClaimType | undefined>
 }
 

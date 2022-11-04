@@ -89,7 +89,13 @@ class AuthorizationRuleUseCases {
 
     const ruleInstance = new AuthorizationRuleInstance(rule, args)
 
-    return this.rulesEngineService.checkAuthorization(claimObjects, ruleInstance)
+    const result = this.rulesEngineService.checkAuthorization(
+      claimObjects, 
+      ruleInstance, 
+      (rule: AuthorizationRuleInstance) => rule.authorizationRule.savedRule
+    )
+
+    return result
   }
 
   delete = this.repository.delete

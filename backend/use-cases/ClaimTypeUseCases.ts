@@ -10,8 +10,33 @@ class ClaimTypeUseCases {
     private enumOptionsRepository: EnumClaimTypeOptionsRepository
   ) { }
 
+  private isCamelCase = (str: string): boolean => {
+    const hasSpace = str.includes(' ')
+    const firstLetterIsLowercase = /[a-z]/.test(str[0])
+  
+    return (!hasSpace && firstLetterIsLowercase)
+  } 
+  
+  private toCamelCase = (str: string): string => {
+    if (this.isCamelCase(str)) return str
+  
+    return str.
+      split(' ')
+      .map((word, index) => {
+        const firstLetter = word[0]
+        return (index === 0 ? firstLetter.toLowerCase() : firstLetter.toUpperCase()) + word.slice(1)
+      })
+      .join('')
+  }
+
   create = async (params: { name: string, dataType: ClaimTypeOptions, options: string[] }): Promise<ClaimType> => {
-    const { options, ...newClaimType } = params
+    const { options, name, ...rest } = params
+    const newClaimType = {
+      name,
+      camelCaseName: this.toCamelCase(name),
+      ...rest
+    }
+
     const claimType = await this.repository.create(newClaimType)
     if (params.dataType === "enum" && options) {
       await Promise.all(options.map(async option => 
@@ -35,7 +60,12 @@ class ClaimTypeUseCases {
   }
   readAllEnumClaimTypeOptions = this.enumOptionsRepository.readByClaimType
   deleteEnumClaimTypeOption = this.enumOptionsRepository.delete
-  update = this.repository.update
+  update = async (id: number, claimType: { name: string }) => {
+    return await this.repository.update(id, {
+      name: claimType.name,
+      camelCaseName: this.toCamelCase(claimType.name)
+    })
+  }
   delete = this.repository.delete
 }
 

@@ -120,14 +120,14 @@ class EnumClaimTypeExtender extends BaseExtender<EnumClaimType> {
 
 class ClaimTypeMapper extends EntityMapperBase<ClaimTypesUnion> {
   override map(original: any): EnumClaimTypeExtender | BaseExtender<ClaimTypesUnion> {
-    const { id, name } = original
+    const { id, name, camelCaseName } = original
     const type: ClaimTypeOptions = original.dataType
     
     switch(type) {
       case 'enum':
-        return new EnumClaimTypeExtender(new EnumClaimType(id, name))
+        return new EnumClaimTypeExtender(new EnumClaimType(id, name, camelCaseName))
       default:
-        return new BaseExtender(new ClaimType(id, name, type))
+        return new BaseExtender(new ClaimType(id, name, camelCaseName, type))
     }
   }
 }

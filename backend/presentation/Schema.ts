@@ -42,6 +42,7 @@ const typeDefs = gql`
   type ClaimType {
     id: Int
     name: String
+    camelCaseName: String,
     dataType: String
     options: [EnumClaimTypeOption]
     claims: [ClaimInstance]
