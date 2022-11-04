@@ -112,22 +112,22 @@ const FormPrimitive = ({ primitiveSchema, state, setState }) => {
             case "string":
                 return {
                     value: state ?? defaultValues.string,
-                    onChange: (e) => e.target.value
+                    onChange: (e) => setState(e.target.value)
                 }
             case "number":
                 return {
                     value: state ?? defaultValues.number,
-                    onChange: (e) => Number.parseFloat(e.target.value)
+                    onChange: (e) => setState(Number.parseFloat(e.target.value))
                 }
             case "boolean":
                 return {
                     checked: state ?? defaultValues.boolean,
-                    onChange: (e) => Boolean(e.target.checked)
+                    onChange: (e) => setState(Boolean(e.target.checked))
                 }
             default:
                 throw new Error("Invalid primitive type.")
         }
-    }, [state])
+    }, [state, setState])
 
     const mappedFieldProps = { size: "small", fullWidth: true, ...fieldProps }
 
