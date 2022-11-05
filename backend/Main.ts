@@ -305,12 +305,12 @@ function authorize(request: SmartLock.Request, args: Args) {
     console.log(`Smart lock back end server started. Listening on port ${config.portNumber}.`)
   })
 
-  setInterval(() => {
+  /*setInterval(() => {
     deviceMessagingService.send(
       new DeviceProfile(1, 'sekrit', 'notsekrit', '00:B0:D0:63:C2:26', true, "connected"),
       "unlock"
     )
-  }, 1000)
+  }, 1000)*/
 }
 
 main()
