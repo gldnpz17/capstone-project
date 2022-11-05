@@ -103,6 +103,13 @@ const typeDefs = gql`
     errorMessage: String
   }
 
+  type ConnectResult {
+    deviceId: Int
+    serverDomain: String,
+    devicePublicKey: String,
+    confirmationToken: String
+  }
+
   type Query {
     totp: TotpUtilities
     accounts(${collectionArgs({ keyType: 'String' })}): [Account]
@@ -156,10 +163,11 @@ const typeDefs = gql`
     createSmartLock(name: String!, wifiSsid: String, wifiPassword: String): SmartLock
     updateSmartLock(id: ID!, instance: UpdateSmartLockInput): SmartLock
     deleteSmartLock(id: ID!): SmartLock
-    connectSmartLock(id: ID!): DeviceProfile
+    connectSmartLock(id: ID!): ConnectResult
     confirmDevice(deviceId: ID!, macAddress: String): DeviceProfile
     pingDevice(id: ID!): Boolean
     updateSmartLockRule(id: String, ruleId: Int, ruleArgs: String): Boolean
+    sendCommand(smartLockId: ID!, command: String): Boolean
     # Authorization Rules
     createAuthorizationRule: AuthorizationRule
     saveAuthorizationRuleChanges(id: ID!, authorizationRule: String): Boolean

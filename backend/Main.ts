@@ -20,7 +20,7 @@ import { SequelizeReadResolvers } from './presentation/resolvers/SequelizeReadRe
 import { TotpUtilitiesResolvers } from './presentation/resolvers/TotpUtilitiesResolvers';
 import { ClaimTypeResolvers } from './presentation/resolvers/ClaimTypeResolvers';
 import { SmartLockResolvers } from './presentation/resolvers/SmartLockResolvers';
-import { SmartLockUseCases } from './use-cases/SmartLockUseCases';
+import { ConfirmationToken, DeviceToken, SmartLockUseCases } from './use-cases/SmartLockUseCases';
 import { SequelizeSmartLocksRepository } from './repositories/SmartLocksRepository';
 import { SequelizeDeviceProfilesRepository } from './repositories/DeviceProfilesRepository';
 import { NodeRsaDigitalSignatureService } from './domain-model/services/DigitalSignatureService';
@@ -30,6 +30,12 @@ import { MockDeviceMessagingService } from './domain-model/services/DeviceMessag
 import { AuthorizationRuleResolvers } from './presentation/resolvers/AuthorizationRuleResolvers';
 import { AuthorizationRuleUseCases } from './use-cases/AuthorizationRuleUseCases';
 import { SequelizeAuthorizationRulesRepository } from './repositories/AuthorizationRulesRepository';
+import express from 'express';
+import { createServer } from 'http';
+import { DeviceProfile } from './domain-model/entities/DeviceProfile';
+import { NotImplementedError } from './common/Errors';
+import morgan from 'morgan'
+import bodyParser from 'body-parser';
 
 async function initDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
@@ -110,7 +116,10 @@ function authorize(request: SmartLock.Request, args: Args) {
         preset => preset.canManageLocks
       )
     ],
-    DEFAULT_AUTHORIZATION_RULE
+    DEFAULT_AUTHORIZATION_RULE,
+    4000,
+    'localhost:4000',
+    2000
   )
 
   const inMemoryDb = await new InMemorySqliteSequelizeInstance().initialize()
@@ -195,6 +204,13 @@ function authorize(request: SmartLock.Request, args: Args) {
     )
   )
 
+  const confirmationTokenService = new JwtTransientTokenService<ConfirmationToken>(
+    config, 
+    "ConfirmationToken", 
+    { singleUse: true, lifetime: 300000 }
+  )
+  const deviceTokenService = new JwtTransientTokenService<DeviceToken>(config, "DeviceToken")
+
   const smartLockUseCases = new SmartLockUseCases(
     smartLocksRepository,
     devicesRepository,
@@ -202,7 +218,10 @@ function authorize(request: SmartLock.Request, args: Args) {
     deviceProfileStatusStore,
     lockStatusStore,
     rulesEngineService,
-    deviceMessagingService
+    deviceMessagingService,
+    confirmationTokenService,
+    deviceTokenService,
+    config
   )
 
   const authorizationRuleUseCases = new AuthorizationRuleUseCases(
@@ -215,7 +234,59 @@ function authorize(request: SmartLock.Request, args: Args) {
 
   await initDatabase(claimTypeUseCases, accountUseCases)
 
-  await new ApolloGraphqlServer(
+  const expressApp = express()
+  const httpServer = createServer(expressApp)
+
+  /*expressApp.use(express.text({ type: 'text/test' }))
+  expressApp.use((req, res, next) => {
+    console.log('Body : ', req.body)
+    next()
+  })*/
+  expressApp.use(express.json())
+
+  expressApp.post('/devices/:id/confirm', async (req, res) => {
+    const { id } = req.params
+    const { confirmationToken, macAddress } = req.body
+
+    const result = await smartLockUseCases.confirmDevice({ 
+      deviceId: Number.parseInt(id),
+      confirmationToken,
+      macAddress
+    })
+
+    res.status(200).json(result)
+  })
+
+  const authorizeDevice = async (authorization: string | undefined, deviceId: string) => {
+    if (!authorization) throw new NotImplementedError()
+
+    const [_, deviceToken] = authorization.split(' ')
+    const { deviceId: tokenDeviceId } = await deviceTokenService.decodeToken(deviceToken)
+
+    if (tokenDeviceId != Number.parseInt(deviceId)) throw new NotImplementedError()
+  }
+
+  expressApp.get('/devices/:id/messages/subscribe', async (req, res) => {
+    const { id } = req.params
+    const { authorization } = req.headers
+    await authorizeDevice(authorization, id)
+
+    const message = await deviceMessagingService.waitForMessage(id)
+
+    res.status(200).send(message)
+  })
+
+  expressApp.post('/devices/:id/ping', async (req, res) => {
+    const { id } = req.params
+    const { authorization } = req.headers
+    await authorizeDevice(authorization, id)
+
+    smartLockUseCases.ping(Number.parseInt(id))
+
+    res.sendStatus(200)
+  })
+
+  const apolloServer = await new ApolloGraphqlServer(
     [
       new SequelizeReadResolvers(inMemoryDb),
       new AccountResolvers(accountUseCases),
@@ -227,6 +298,19 @@ function authorize(request: SmartLock.Request, args: Args) {
     typeDefs
   )
   .start()
+
+  apolloServer.applyMiddleware({ app: expressApp })
+
+  httpServer.listen(config.portNumber, () => {
+    console.log(`Smart lock back end server started. Listening on port ${config.portNumber}.`)
+  })
+
+  setInterval(() => {
+    deviceMessagingService.send(
+      new DeviceProfile(1, 'sekrit', 'notsekrit', '00:B0:D0:63:C2:26', true, "connected"),
+      "unlock"
+    )
+  }, 1000)
 }
 
 main()

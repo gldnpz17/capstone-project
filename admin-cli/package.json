@@ -1,0 +1,20 @@
+{
+  "name": "admin-cli",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@apollo/client": "^3.7.1",
+    "@types/node": "^18.11.5",
+    "@types/prompt-sync": "^4.2.0",
+    "@types/qrcode-terminal": "^0.12.0",
+    "cli-select": "^1.1.2",
+    "cross-fetch": "^3.1.5",
+    "graphql": "^16.6.0",
+    "prompt-sync": "^4.2.0",
+    "qrcode-terminal": "^0.12.0",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^4.8.4"
+  }
+}

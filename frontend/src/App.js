@@ -8,7 +8,7 @@ import { AuthorizationRuleEditor } from './pages/AuthorizationRuleEditor.js';
 import SmartLockList from './pages/SmartLockList.js';
 
 const graphqlClient = new ApolloClient({
-    uri: "http://localhost:4000",
+    uri: "http://localhost:4000/graphql",
     cache: new InMemoryCache()
 })
 

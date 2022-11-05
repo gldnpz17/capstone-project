@@ -17,7 +17,10 @@ class ApplicationConfiguration {
   constructor(
     public jwtSigningSecret: string,
     public adminPrivileges: AdminPrivilege[],
-    public defaultAuthorizationRule: string
+    public defaultAuthorizationRule: string,
+    public portNumber: number,
+    public serverDomain: string,
+    public confirmationTokenLifetime: 2000
   ) { }
 }
 

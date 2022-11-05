@@ -1,0 +1,14 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "command": "npx ts-node-dev --files --transpile-only --respawn --inspect=9229 Main.ts",
+      "name": "Run application",
+      "request": "launch",
+      "type": "node-terminal"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { ApolloServer } from 'apollo-server'
+import { ApolloServer } from 'apollo-server-express'
 import { DocumentNode } from 'graphql'
 import { ResolversBase } from './resolvers/common/ResolversBase'
 
@@ -40,9 +40,9 @@ class ApolloGraphqlServer {
       }
     })
 
-    const { url } = await server.listen()
+    await server.start()
 
-    console.log(`Server running and is accesible from ${url}.`)
+    return server
   }
 }
 
