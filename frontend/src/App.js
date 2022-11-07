@@ -6,6 +6,7 @@ import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
 import { createTheme, ThemeProvider } from '@mui/material';
 import { AuthorizationRuleEditor } from './pages/AuthorizationRuleEditor.js';
 import SmartLockList from './pages/SmartLockList.js';
+import { EndUserLoginPage } from './pages/EndUserLogin.js';
 
 const graphqlClient = new ApolloClient({
     uri: "http://localhost:4000/graphql",
@@ -43,6 +44,9 @@ function App() {
                 <ThemeProvider theme={theme}>
                     <BrowserRouter>
                         <Routes>
+                            <Route path="/">
+                                <Route path="login" element={<EndUserLoginPage />} />
+                            </Route>
                             <Route path="/admin">
                                 <Route path="login" element={<LoginForm />} />
                                 <Route path="accounts" element={<AccManagement />} />

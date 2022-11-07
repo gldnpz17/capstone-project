@@ -12,6 +12,7 @@ const AUTHENTICATE_PASSWORD = gql`
   mutation AuthenticatePassword($username: String, $password: String) {
     authenticatePassword(username: $username, password: $password) {
       secondFactorToken
+      secondFactorSetupToken
     }
   }
 `
@@ -118,6 +119,14 @@ const DELETE_ACCOUNT = gql`
   }
 `
 
+const SETUP_TOTP = gql`
+  mutation SetupTotp($secondFactorSetupToken: String, $sharedSecret: String, $totp: String) {
+    setupSecondFactor(secondFactorSetupToken: $secondFactorSetupToken, sharedSecret: $sharedSecret, totp: $totp) {
+      refreshToken
+    }
+  }
+`
+
 export { 
   REGISTER_ACCOUNT,
   DELETE_ACCOUNT,
@@ -128,5 +137,6 @@ export {
   READ_ACCOUNT_BY_ID,
   ADD_CLAIM_TO_ACCOUNT,
   UPDATE_CLAIM,
-  DELETE_CLAIM
+  DELETE_CLAIM,
+  SETUP_TOTP
 }
