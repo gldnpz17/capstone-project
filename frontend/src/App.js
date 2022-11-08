@@ -8,6 +8,7 @@ import { AuthorizationRuleEditor } from './pages/AuthorizationRuleEditor.js';
 import SmartLockList from './pages/SmartLockList.js';
 import { LoginPage } from './pages/Login.js';
 import { NavSideBar } from './components/NavSideBar.js';
+import { LockScannerPage } from './pages/LockScanner.js';
 
 const graphqlClient = new ApolloClient({
     uri: "http://localhost:4000/graphql",
@@ -46,6 +47,7 @@ function App() {
                     <BrowserRouter>
                         <Routes>
                             <Route path="/">
+                                <Route path="/" element={<LockScannerPage />} />
                                 <Route path="login" element={<LoginPage />} />
                             </Route>
                             <Route path="/admin">
