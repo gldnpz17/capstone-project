@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import { handleForm } from '../common/handleForm'
 import { useModal } from '../hooks/useModal';
 import SmartLockSetting from './SmartLockSetting';
+import { useOutletContext } from 'react-router-dom';
 
 function QuickSearchToolbar() {
   return (
@@ -46,13 +47,13 @@ export default function SmartLockList() {
     })
   }, ["name"])
 
-  const [SettingModal, openSettingModal] = useModal(SmartLockSetting)
+  const { openSettingModal } = useOutletContext()
 
   const columns = [
     { field: 'id', headerName: 'ID', width: 350, headerClassName: 'headrow', headerAlign:'center', align: 'center', },
-    { field: 'name', headerName: 'Name', headerClassName: 'headrow', width: 150, editable: true, headerAlign:'center', align: 'center' },
-    { field: 'status', headerName: 'Status', headerClassName: 'headrow', width: 150, editable: true, headerAlign:'center', align: 'center' },
-    { field: 'connection', headerName: 'Connection', headerClassName: 'headrow', width: 150, editable: true, headerAlign:'center', align: 'center' },
+    { field: 'name', headerName: 'Name', headerClassName: 'headrow', width: 250, editable: true, headerAlign:'center', align: 'center' },
+    { field: 'status', headerName: 'Status', headerClassName: 'headrow', width: 200, editable: true, headerAlign:'center', align: 'center' },
+    { field: 'connection', headerName: 'Connection', headerClassName: 'headrow', width: 200, editable: true, headerAlign:'center', align: 'center' },
     {
       field: 'action',
       headerName: 'Actions',
@@ -107,8 +108,8 @@ export default function SmartLockList() {
                 <Typography style={{ fontWeight: 800 }}>+</Typography></Button>
               </Grid>
 
-              <Grid item xs={7}>
-                <Typography className="desc-addlock" align="left">The instructions to connect this lock with a device can be found <Link>here.</Link></Typography>
+              <Grid item xs={7} sx={{ display: "flex", alignItems: "center" }}>
+                <Typography className="desc-addlock" align="left">The instructions to connect this lock with a device can be found <Link sx={{ cursor: "pointer" }}>here.</Link></Typography>
               </Grid>
             </Grid>
           </form>
@@ -127,7 +128,6 @@ export default function SmartLockList() {
             components={{ Toolbar: QuickSearchToolbar }}
           />
         </Box>
-        <SettingModal />
       </ThemeProvider>
     </div>
   );

@@ -10,7 +10,7 @@ import { READ_ALL_ACCOUNTS, REGISTER_ACCOUNT } from "../queries/Accounts";
 import { handleForm } from "../common/handleForm";
 import theme from '../components/UItheme';
 
-function LoginForm() {
+function AddUser() {
     const { 
         data: { adminPrivilegePresets } = {}, 
         loading: privilegePresetsLoading 
@@ -86,4 +86,4 @@ function LoginForm() {
     );
 }
             
-export default LoginForm;
+export default AddUser;

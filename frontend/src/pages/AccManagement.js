@@ -7,6 +7,7 @@ import { DELETE_ACCOUNT, READ_ALL_ACCOUNTS, READ_ALL_CLAIM_TYPES } from '../quer
 import { useModal } from '../hooks/useModal';
 import EditUser from '../components/EditUser';
 import theme from '../components/UItheme';
+import { useOutletContext } from 'react-router-dom';
 
 const AccountsTableRow = ({ 
     account: { id, username, privilegePreset, claims },
@@ -41,7 +42,6 @@ const AccountsTableRow = ({
 }
 
 const AccManagement = () =>  {
-
     const {
         data: { accounts } = { accounts: [] },
         loading: accountsLoading
@@ -52,20 +52,15 @@ const AccManagement = () =>  {
         loading: claimTypesLoading
     } = useQuery(READ_ALL_CLAIM_TYPES)
 
-    const [AddUserModal, openAddUserModal] = useModal(AddUser)
-    const [EditUserModal, openEditUserModal] = useModal(EditUser)
+    const { openAddUserModal, openEditUserModal } = useOutletContext()
 
     return (
         <div class="main">
             <div class="add2-btn">
                 <ThemeProvider theme={theme} >
-                    <Grid>
-                        <Grid item xs={12}>
-                            <Button type="submit" onClick={openAddUserModal()} variant="contained" color="primary" value="" style={{ textTransform: 'none'}}>
-                                <Typography style={{ fontWeight: 500 }}>Add User</Typography>
-                            </Button>
-                        </Grid>
-                    </Grid>
+                    <Button type="submit" onClick={openAddUserModal()} variant="contained" color="primary" value="" style={{ textTransform: 'none'}}>
+                        <Typography style={{ fontWeight: 500 }}>Add User</Typography>
+                    </Button>
                 </ThemeProvider>
             </div>
 
@@ -92,9 +87,6 @@ const AccManagement = () =>  {
                     </tbody>
                 </table>    
             )} 
-
-            <AddUserModal />
-            <EditUserModal />
         </div>
     )
 }

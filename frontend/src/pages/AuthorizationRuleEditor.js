@@ -281,7 +281,7 @@ const AuthorizationRuleEditor = () => {
             <Stack sx={{ height: "15rem" }}>
               <Stack direction="row" sx={{ px: 2, py: 1, alignItems: "center", backgroundColor: theme.palette.primary.main, color: "white" }}>
                 <Typography sx={{ flexGrow: 1 }}>OUTPUT</Typography>
-                <Button color="secondary" sx={{ color: "white" }} variant="contained">Clear output</Button>
+                <Button color="secondary" sx={{ color: "white" }} disabled={logs?.length === 0} onClick={() => setLogs([])} variant="contained">Clear output</Button>
               </Stack>
               <Stack sx={{ overflowY: "scroll", flexGrow: 1 }}>
                 {logs.map(log => (

@@ -116,7 +116,7 @@ const SetupSecondFactorForm = ({ token: secondFactorSetupToken, username }) => {
     )
 }
 
-const EndUserLoginPage = () => {
+const LoginPage = () => {
     const [mode, setMode] = useState("firstFactor")
     const [secondStageToken, setSecondStageToken] = useState(null)
     const [username, setUsername] = useState(null)
@@ -161,4 +161,4 @@ const EndUserLoginPage = () => {
     )
 }
 
-export { EndUserLoginPage }
+export { LoginPage }
