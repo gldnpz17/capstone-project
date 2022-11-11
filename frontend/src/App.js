@@ -2,7 +2,7 @@ import LoginForm from './pages/LoginForm.js'
 import AccManagement from './pages/AccManagement'
 import { BrowserRouter, createBrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css';
-import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
+import { ApolloClient, ApolloProvider, createHttpLink, InMemoryCache } from '@apollo/client';
 import { createTheme, ThemeProvider } from '@mui/material';
 import { AuthorizationRuleEditor } from './pages/AuthorizationRuleEditor.js';
 import SmartLockList from './pages/SmartLockList.js';
@@ -10,9 +10,14 @@ import { LoginPage } from './pages/Login.js';
 import { NavSideBar } from './components/NavSideBar.js';
 import { LockScannerPage } from './pages/LockScanner.js';
 
-const graphqlClient = new ApolloClient({
+const link = createHttpLink({
     uri: "http://localhost:4000/graphql",
-    cache: new InMemoryCache()
+    credentials: 'include'
+})
+
+const graphqlClient = new ApolloClient({
+    cache: new InMemoryCache(),
+    link
 })
 
 function App() {
@@ -48,9 +53,10 @@ function App() {
                         <Routes>
                             <Route path="/">
                                 <Route path="/" element={<LockScannerPage />} />
-                                <Route path="login" element={<LoginPage />} />
+                                <Route path="login" element={<LoginPage successHref="/" />} />
                             </Route>
                             <Route path="/admin">
+                                <Route path="login" element={<LoginPage successHref="/admin/accounts" />} />
                                 <Route element={<NavSideBar />}>
                                     <Route path="accounts" element={<AccManagement />} />
                                     <Route path="smart-locks" element={<SmartLockList />} />

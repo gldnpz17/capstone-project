@@ -10,6 +10,9 @@ import { PasswordCredential } from "../../domain-model/entities/PasswordCredenti
 import { SmartLock } from "../../domain-model/entities/SmartLock";
 import { TotpCredential } from "../../domain-model/entities/TotpCredential";
 
+// This whole thing was a mistake. 😔
+// Should find a better way of mapping things.
+
 abstract class EntityMapperBase<TEntity> {
   map(original: any): BaseExtender<TEntity> {
     return new BaseExtender(original)
@@ -35,7 +38,8 @@ class AccountExtender extends BaseExtender<Account> {
     item: Account, 
     private passwordCredentialMapper: PasswordCredentialMapper,
     private totpCredentialMapper: TotpCredentialMapper,
-    private claimMapper: ClaimInstanceMapper
+    private claimMapper: ClaimInstanceMapper,
+    private adminPrivilegeMapper: AdminPrivilegePresetMapper
   ) { super(item) }
 
   addPassword(instance: any): this {
@@ -50,6 +54,11 @@ class AccountExtender extends BaseExtender<Account> {
 
   addClaims(instances: any[]): this {
     this.item.claims = instances.map(instance => this.claimMapper.map(instance).get())
+    return this
+  }
+
+  addPrivilegePreset(instance: any): this {
+    this.item.privilegePreset = this.adminPrivilegeMapper.map(instance).get()
     return this
   }
 }
@@ -70,30 +79,39 @@ class TotpCredentialMapper extends EntityMapperBase<TotpCredential> {
 
 class AccountMapper extends EntityMapperBase<Account> {
   constructor(
+    private mapper: ShallowAccountMapper,
     private passwordCredentialMapper: PasswordCredentialMapper,
     private totpCredentialMapper: TotpCredentialMapper,
-    private claimMapper: ClaimInstanceMapper
+    private claimMapper: ClaimInstanceMapper,
+    private adminPrivilegePresetMapper: AdminPrivilegePresetMapper
   ) { super() }
 
   override map(original: any): AccountExtender {
-    const { id, username } = original
     return new AccountExtender(
-      new Account(id, username),
+      this.mapper.map(original),
       this.passwordCredentialMapper,
       this.totpCredentialMapper,
-      this.claimMapper
+      this.claimMapper,
+      this.adminPrivilegePresetMapper
     )
+  }
+}
+
+class ShallowAccountMapper extends ShallowMapperBase<Account> {
+  map(original: any): Account {
+    const { id, username } = original
+    return new Account(id, username)
   }
 }
 
 class AdminPrivilegePresetExtender extends BaseExtender<AdminPrivilegePreset> {
   constructor(
     item: AdminPrivilegePreset,
-    private accountMapper: AccountMapper
+    private accountMapper: ShallowAccountMapper
   ) { super(item) }
 
   addAccounts(accounts: Account[]): this {
-    this.item.accounts = accounts.map(account => this.accountMapper.map(account).get())
+    this.item.accounts = accounts.map(account => this.accountMapper.map(account))
 
     return this
   }
@@ -101,13 +119,13 @@ class AdminPrivilegePresetExtender extends BaseExtender<AdminPrivilegePreset> {
 
 class AdminPrivilegePresetMapper extends EntityMapperBase<AdminPrivilegePreset> {
   constructor(
-    private accountMapper: AccountMapper
+    private accountMapper: ShallowAccountMapper
   ) { super() }
 
   override map(original: any): AdminPrivilegePresetExtender {
-    const { id, name, system, canManageAccounts, canManageLocks } = original
+    const { id, name, system, isSuperAdmin, canManageAccounts, canManageLocks } = original
     return new AdminPrivilegePresetExtender(
-      new AdminPrivilegePreset(id, name, system, canManageAccounts, canManageLocks),
+      new AdminPrivilegePreset(id, name, system, isSuperAdmin, canManageAccounts, canManageLocks),
       this.accountMapper
     )
   }
@@ -273,7 +291,8 @@ class AuthorizationRuleMapper extends EntityMapperBase<AuthorizationRule> {
 }
 
 export { 
-  AccountMapper, 
+  AccountMapper,
+  ShallowAccountMapper,
   PasswordCredentialMapper, 
   TotpCredentialMapper, 
   AdminPrivilegePresetMapper,

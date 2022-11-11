@@ -10,4 +10,10 @@ class FormSchemaError extends Error {
   }
 }
 
-export { NotImplementedError, FormSchemaError }
+class AuthorizationError extends Error {
+  constructor(message: string = "An authorization error occured.") {
+    super(message)
+  }
+}
+
+export { NotImplementedError, FormSchemaError, AuthorizationError }

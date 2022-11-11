@@ -8,6 +8,7 @@ import { DigitalSignatureService } from "../domain-model/services/DigitalSignatu
 import { KeyValueService } from "../domain-model/services/KeyValueService"
 import { RulesEngineService } from "../domain-model/services/RulesEngineService"
 import { TransientTokenService } from "../domain-model/services/TransientTokenService"
+import { AccountsRepository } from "../repositories/AccountsRepository"
 import { DeviceProfilesRepository } from "../repositories/DeviceProfilesRepository"
 import { SmartLocksRepository } from "../repositories/SmartLocksRepository"
 
@@ -36,6 +37,7 @@ class SmartLockUseCases {
   constructor(
     private repository: SmartLocksRepository,
     private devicesRepository: DeviceProfilesRepository,
+    private accountsRepository: AccountsRepository,
     private digitalSignatureService: DigitalSignatureService,
     private deviceStatusStore: KeyValueService,
     private lockStatusStore: KeyValueService,
@@ -99,14 +101,18 @@ class SmartLockUseCases {
     this.deviceStatusStore.set(deviceProfileId.toString(), 'connected')
   }
 
-  sendCommand = async (request: { smartLockId: string, command: string }, claims: ClaimInstanceUnion[]) => {
+  sendCommand = async (request: { smartLockId: string, command: string }, accountId: string) => {
     const smartLock = await this.repository.readByIdIncludeDeviceAndAuthorizationRule(request.smartLockId)
 
     if (!smartLock?.authorizationRule || !smartLock?.authorizationRuleArgs) throw new NotImplementedError()
     if (!smartLock?.device?.macAddress) throw new NotImplementedError()
 
+    const account = await this.accountsRepository.readByIdIncludeClaims(accountId)
+
+    if (!account?.claims) throw new NotImplementedError()
+
     const result = this.rulesEngineService.checkAuthorization(
-      claims, 
+      account.claims, 
       smartLock.authorizationRule.deployedRule, 
       smartLock.authorizationRuleArgs
     )

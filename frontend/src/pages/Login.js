@@ -6,6 +6,7 @@ import { getFormValues } from "../common/getFormValues"
 import { AUTHENTICATE_PASSWORD, AUTHENTICATE_SECOND_FACTOR, SETUP_TOTP } from "../queries/Accounts"
 import { GENERATE_TOTP_SECRET } from "../queries/AdminPrivilegePresets"
 import QRCode from 'qrcode'
+import { useNavigate } from "react-router-dom"
 
 const FirstFactorForm = ({ setupSecondFactor, authenticateSecondFactor, setUsername }) => {
     const [authenticatePassword] = useMutation(AUTHENTICATE_PASSWORD)
@@ -41,18 +42,22 @@ const FirstFactorForm = ({ setupSecondFactor, authenticateSecondFactor, setUsern
     )
 }
 
-const SecondFactorForm = ({ token }) => {
+const SecondFactorForm = ({ token, successHref }) => {
     const [authenticateSecondFactor] = useMutation(AUTHENTICATE_SECOND_FACTOR)
+
+    const navigate = useNavigate()
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         const { totp } = getFormValues(e.target)
 
         const { data: { authenticateSecondFactor: { refreshToken } } } = await authenticateSecondFactor({
-            variables: { token, totp }
+            variables: { secondFactorToken: token, totp }
         })
 
-        console.log(refreshToken)
+        if (refreshToken) {
+            navigate(successHref)
+        }
     }
 
     return (
@@ -66,11 +71,13 @@ const SecondFactorForm = ({ token }) => {
     )
 }
 
-const SetupSecondFactorForm = ({ token: secondFactorSetupToken, username }) => {
+const SetupSecondFactorForm = ({ token: secondFactorSetupToken, username, successHref }) => {
     const {
         data: { totp: { generateSecret: sharedSecret } } = { totp: {} },
         loading
     } = useQuery(GENERATE_TOTP_SECRET)
+
+    const navigate = useNavigate()
 
     const [qrCodeUrl, setQrCodeUrl] = useState(null)
 
@@ -92,7 +99,9 @@ const SetupSecondFactorForm = ({ token: secondFactorSetupToken, username }) => {
             variables: { secondFactorSetupToken, sharedSecret, totp }
         })
 
-        console.log(refreshToken)
+        if (refreshToken) {
+            navigate(successHref)
+        }
     }
 
     return (
@@ -116,7 +125,7 @@ const SetupSecondFactorForm = ({ token: secondFactorSetupToken, username }) => {
     )
 }
 
-const LoginPage = () => {
+const LoginPage = ({ successHref }) => {
     const [mode, setMode] = useState("firstFactor")
     const [secondStageToken, setSecondStageToken] = useState(null)
     const [username, setUsername] = useState(null)
@@ -150,10 +159,10 @@ const LoginPage = () => {
                         <FirstFactorForm {...{ setupSecondFactor, authenticateSecondFactor, setUsername }} />
                     )}
                     {mode === "secondFactor" && (
-                        <SecondFactorForm token={secondStageToken} />
+                        <SecondFactorForm token={secondStageToken} {...{ successHref }} />
                     )}
                     {mode === "setupSecondFactor" && (
-                        <SetupSecondFactorForm token={secondStageToken} {...{ username }} />
+                        <SetupSecondFactorForm token={secondStageToken} {...{ username, successHref }} />
                     )}
                 </Stack>
             </Card>

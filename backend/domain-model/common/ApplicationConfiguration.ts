@@ -20,7 +20,8 @@ class ApplicationConfiguration {
     public defaultAuthorizationRule: string,
     public portNumber: number,
     public serverDomain: string,
-    public confirmationTokenLifetime: 2000
+    public confirmationTokenLifetime: number = 2000,
+    public environment: 'production' | 'development'
   ) { }
 }
 

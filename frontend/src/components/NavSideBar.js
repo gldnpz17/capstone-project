@@ -30,14 +30,14 @@ export const NavSideBar = () => {
                                     Navigation Menu
                                 </Typography> 
                                 <Stack gap={2}>
-                                    <Button variant="text" href="/admin/accounts" sx={{ justifyContent: "left" }} style={{ textTransform: 'none'}} startIcon={<GroupIcon />} fullwidth>
+                                    <Button variant="text" href="/admin/accounts" sx={{ justifyContent: "left" }} style={{ textTransform: 'none'}} startIcon={<GroupIcon />} fullWidth>
                                         Account Management
                                     </Button>
-                                    <Button variant="text" href="/admin/smart-locks" sx={{ justifyContent: "left" }} style={{ textTransform: 'none'}} startIcon={<LockIcon />} fullwidth>
+                                    <Button variant="text" href="/admin/smart-locks" sx={{ justifyContent: "left" }} style={{ textTransform: 'none'}} startIcon={<LockIcon />} fullWidth>
                                         Lock Management
                                     </Button>
                                     <Divider/>
-                                    <Button variant="text" sx={{ justifyContent: "left" }} style={{ textTransform: 'none'}} startIcon={<LogoutIcon />} fullwidth>
+                                    <Button variant="text" sx={{ justifyContent: "left" }} style={{ textTransform: 'none'}} startIcon={<LogoutIcon />} fullWidth>
                                         Log Out
                                     </Button>
                                 </Stack>

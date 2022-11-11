@@ -1,5 +1,6 @@
 import { NotImplementedError } from '../common/Errors'
 import { Account } from '../domain-model/entities/Account'
+import { AdminPrivilegePreset } from '../domain-model/entities/AdminPrivilegePreset'
 import { ClaimInstance } from '../domain-model/entities/ClaimInstance'
 import { ClaimType } from '../domain-model/entities/ClaimType'
 import { PasswordService } from '../domain-model/services/PasswordService'
@@ -23,7 +24,7 @@ class SecondFactorAuthenticationResult {
   ) { }
 }
 
-class AuthenticationToken {
+class RefreshToken {
   account: {
     id: string,
     username: string
@@ -31,7 +32,26 @@ class AuthenticationToken {
 
   constructor(account: Account) {
     const { id, username } = account
+
     this.account = { id, username }
+  }
+}
+
+type PrivilegePreset = Omit<AdminPrivilegePreset, "accounts">
+
+class AccessToken {
+  account: {
+    id: string,
+    username: string,
+    privilegePreset: PrivilegePreset
+  }
+
+  constructor(account: Account) {
+    const { id, username, privilegePreset } = account
+
+    if (!privilegePreset) throw new NotImplementedError()
+
+    this.account = { id, username, privilegePreset }
   }
 }
 
@@ -64,7 +84,8 @@ class AccountUseCases {
     private totpService: TotpService,
     private secondFactorTokenService: TransientTokenService<SecondFactorToken>,
     private secondFactorSetupTokenService: TransientTokenService<SecondFactorSetupToken>,
-    private authenticationTokenService: TransientTokenService<AuthenticationToken>,
+    private refreshTokenService: TransientTokenService<RefreshToken>,
+    private accessTokenService: TransientTokenService<AccessToken>,
     private claimInstancesRepository: ClaimInstancesRepository
   ) { }
 
@@ -118,7 +139,7 @@ class AccountUseCases {
 
     if (!account) throw new NotImplementedError()
 
-    const token = await this.authenticationTokenService.generateToken(new AuthenticationToken(account), token => token.account.id)
+    const token = await this.refreshTokenService.generateToken(new RefreshToken(account), token => token.account.id)
 
     return new SecondFactorAuthenticationResult(token)
   }
@@ -133,9 +154,19 @@ class AccountUseCases {
     if (!await this.totpService.totpIsValid(account.totp.totpSharedSecret, credentials.totp)) 
       throw new NotImplementedError()
 
-    const token = await this.authenticationTokenService.generateToken(new AuthenticationToken(account), token => token.account.id)
+    const token = await this.refreshTokenService.generateToken(new RefreshToken(account), token => token.account.id)
 
     return new SecondFactorAuthenticationResult(token)
+  }
+
+  getAccessToken = async (rawRefreshToken: string): Promise<AccessToken> => {
+    const { account: { id } } = await this.refreshTokenService.decodeToken(rawRefreshToken)
+
+    const account = await this.accountsRepository.readByIdIncludeAdminPrivilegePreset(id)
+
+    if (!account) throw new NotImplementedError()
+
+    return new AccessToken(account)
   }
 
   addClaim = this.claimInstancesRepository.create
@@ -159,4 +190,4 @@ class AccountUseCases {
   delete = this.accountsRepository.delete
 }
 
-export { AccountUseCases, SecondFactorToken, SecondFactorSetupToken, AuthenticationToken }
+export { AccountUseCases, SecondFactorToken, SecondFactorSetupToken, RefreshToken, AccessToken }

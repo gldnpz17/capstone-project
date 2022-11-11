@@ -105,9 +105,24 @@ const typeDefs = gql`
 
   type ConnectResult {
     deviceId: Int
-    serverDomain: String,
-    devicePublicKey: String,
+    serverDomain: String
+    devicePublicKey: String
     confirmationToken: String
+  }
+
+  type AdminPrivilegePresetWithoutAccounts {
+    id: Int
+    canManageAccounts: Boolean
+    canManageLocks: Boolean
+    name: String
+    system: Boolean
+    isSuperAdmin: Boolean
+  }
+
+  type SelfInspectionResult {
+    id: ID!
+    username: String!
+    privilegePreset: AdminPrivilegePresetWithoutAccounts
   }
 
   type Query {
@@ -117,7 +132,8 @@ const typeDefs = gql`
     claimTypes(${collectionArgs({ keyType: 'Int' })}): [ClaimType]
     smartLocks(${collectionArgs({ keyType: 'String' })}): [SmartLock]
     deviceProfiles(${collectionArgs({ keyType: 'Int' })}): [DeviceProfile]
-    authorizationRules(${collectionArgs({ keyType: 'Int' })}): [AuthorizationRule]
+    authorizationRules(${collectionArgs({ keyType: 'Int' })}): [AuthorizationRule],
+    inspectSelf: SelfInspectionResult
   }
 
   enum CLAIM_TYPE_DATA_TYPE {

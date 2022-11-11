@@ -76,6 +76,11 @@ abstract class SequelizeInstance {
         type: DataTypes.BOOLEAN,
         allowNull: false
       },
+      isSuperAdmin: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       canManageAccounts: {
         type: DataTypes.BOOLEAN,
         allowNull: false
@@ -263,13 +268,15 @@ abstract class SequelizeInstance {
         name: 'End User',
         system: true,
         canManageAccounts: false,
-        canManageLocks: true
+        canManageLocks: true,
+        isSuperAdmin: false
       }, 
       {
         name: 'Super Admin',
         system: true,
         canManageAccounts: true,
-        canManageLocks: true
+        canManageLocks: true,
+        isSuperAdmin: true
       }
     ])
 

@@ -1,6 +1,12 @@
 import { KeyValueService } from "../../domain-model/services/KeyValueService";
+import { AccessToken } from "../../use-cases/AccountUseCases";
 import { SmartLockUseCases } from "../../use-cases/SmartLockUseCases";
 import { ResolversBase } from "./common/ResolversBase";
+
+type sendCommandArgs = {
+  smartLockId: string, 
+  command: string
+}
 
 class SmartLockResolvers extends ResolversBase {
   constructor(
@@ -26,7 +32,10 @@ class SmartLockResolvers extends ResolversBase {
       connectSmartLock: this.mapUseCase(this.useCases.connect, { spread: true }),
       pingDevice: this.mapUseCase(this.useCases.ping, { spread: true }),
       confirmDevice: this.mapUseCase(this.useCases.confirmDevice),
-      updateSmartLockRule: this.mapUseCase(this.useCases.updateSmartLockRule)
+      updateSmartLockRule: this.mapUseCase(this.useCases.updateSmartLockRule),
+      sendCommand: async (_: any, args: sendCommandArgs, context: AccessToken ) => {
+        return await this.useCases.sendCommand(args, context.account.id)
+      }
     }
   }
 }

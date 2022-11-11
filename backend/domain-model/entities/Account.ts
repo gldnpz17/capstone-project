@@ -1,4 +1,5 @@
-import { ClaimInstance } from "./ClaimInstance"
+import { AdminPrivilegePreset } from "./AdminPrivilegePreset"
+import { ClaimInstance, ClaimInstanceUnion } from "./ClaimInstance"
 import { PasswordCredential } from "./PasswordCredential"
 import { TotpCredential } from "./TotpCredential"
 
@@ -8,7 +9,8 @@ class Account {
     public username: string,
     public password?: PasswordCredential | undefined,
     public totp?: TotpCredential | undefined,
-    public claims?: ClaimInstance[]
+    public claims?: ClaimInstanceUnion[],
+    public privilegePreset?: AdminPrivilegePreset
   ) { }
 
 }

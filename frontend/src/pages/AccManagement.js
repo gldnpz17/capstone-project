@@ -8,6 +8,7 @@ import { useModal } from '../hooks/useModal';
 import EditUser from '../components/EditUser';
 import theme from '../components/UItheme';
 import { useOutletContext } from 'react-router-dom';
+import { authorizePage, authorizeSuperAdminPage } from '../higher-order-components/authorizePage';
 
 const AccountsTableRow = ({ 
     account: { id, username, privilegePreset, claims },
@@ -91,4 +92,4 @@ const AccManagement = () =>  {
     )
 }
 
-export default AccManagement
+export default authorizeSuperAdminPage(AccManagement)

@@ -18,8 +18,8 @@ const AUTHENTICATE_PASSWORD = gql`
 `
 
 const AUTHENTICATE_SECOND_FACTOR = gql`
-  mutation AuthenticateSecondFactor($token: String, $totp: String) {
-    authenticateSecondFactor(secondFactorToken: $token, totp: $totp) {
+  mutation AuthenticateSecondFactor($secondFactorToken: String, $totp: String) {
+    authenticateSecondFactor(secondFactorToken: $secondFactorToken, totp: $totp) {
       refreshToken
     }
   }
@@ -127,6 +127,18 @@ const SETUP_TOTP = gql`
   }
 `
 
+const INSPECT_SELF = gql`
+  query InspectSelf {
+    inspectSelf {
+      id
+      privilegePreset {
+        isSuperAdmin
+      }
+      username
+    }
+  }
+`
+
 export { 
   REGISTER_ACCOUNT,
   DELETE_ACCOUNT,
@@ -138,5 +150,6 @@ export {
   ADD_CLAIM_TO_ACCOUNT,
   UPDATE_CLAIM,
   DELETE_CLAIM,
-  SETUP_TOTP
+  SETUP_TOTP,
+  INSPECT_SELF
 }
