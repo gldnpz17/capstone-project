@@ -139,6 +139,12 @@ const INSPECT_SELF = gql`
   }
 `
 
+const LOGOUT = gql`
+  mutation Mutation {
+    logout
+  }
+`
+
 export { 
   REGISTER_ACCOUNT,
   DELETE_ACCOUNT,
@@ -151,5 +157,6 @@ export {
   UPDATE_CLAIM,
   DELETE_CLAIM,
   SETUP_TOTP,
-  INSPECT_SELF
+  INSPECT_SELF,
+  LOGOUT
 }

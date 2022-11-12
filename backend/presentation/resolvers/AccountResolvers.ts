@@ -25,7 +25,11 @@ class AccountResolvers extends ResolversBase {
       },
       addClaimToAccount: this.mapUseCase(this.accountUseCases.addClaim),
       updateClaim: this.mapUseCase(this.accountUseCases.updateClaim, { spread: true }),
-      deleteClaim: this.mapUseCase(this.accountUseCases.deleteClaim, { spread: true })
+      deleteClaim: this.mapUseCase(this.accountUseCases.deleteClaim, { spread: true }),
+      logout: (parent: any, args: any, context: GraphqlContext) => {
+        context.clearSession()
+        return null
+      }
     }
   }
 }

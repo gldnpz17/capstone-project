@@ -9,11 +9,22 @@ import { useModal } from '../hooks/useModal';
 import AddUser from './AddUser';
 import EditUser from './EditUser'
 import SmartLockSetting from '../pages/SmartLockSetting';
+import { useMutation } from '@apollo/client';
+import { INSPECT_SELF, LOGOUT } from '../queries/Accounts';
 
 export const NavSideBar = () => {
     const [AddUserModal, openAddUserModal] = useModal(AddUser)
     const [EditUserModal, openEditUserModal] = useModal(EditUser)
     const [SettingModal, openSettingModal] = useModal(SmartLockSetting)
+
+    const [logout] = useMutation(LOGOUT, {
+        refetchQueries: [{ query: INSPECT_SELF }]
+    })
+
+    const handleLogout = async () => {
+        await logout()
+        window.location.reload()
+    }
 
     return (
         <>
@@ -37,7 +48,7 @@ export const NavSideBar = () => {
                                         Lock Management
                                     </Button>
                                     <Divider/>
-                                    <Button variant="text" sx={{ justifyContent: "left" }} style={{ textTransform: 'none'}} startIcon={<LogoutIcon />} fullWidth>
+                                    <Button onClick={handleLogout} variant="text" sx={{ justifyContent: "left" }} style={{ textTransform: 'none'}} startIcon={<LogoutIcon />} fullWidth>
                                         Log Out
                                     </Button>
                                 </Stack>

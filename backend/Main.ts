@@ -272,7 +272,7 @@ function authorize(request: SmartLock.Request, args: Args) {
   if (config.environment == 'development') {
     expressApp.use(cors({
       credentials: true,
-      origin: 'http://localhost:3000'
+      origin: ['http://localhost:3000', 'https://studio.apollographql.com']
     }))
 
     console.log('CORS options set for a development environment.')
@@ -328,6 +328,7 @@ function authorize(request: SmartLock.Request, args: Args) {
         console.error('An authorization error has occured.')
         console.error(err)
         res.clearCookie('authorization')
+        next()
       }
     }
 
@@ -395,14 +396,15 @@ function authorize(request: SmartLock.Request, args: Args) {
       "*": isSuperAdmin,
       totp: allow,
       accounts: or(isAccountOwner, isSuperAdmin),
-      inspectSelf: isAuthenticated
+      inspectSelf: isAuthenticated,
     },
     Mutation: {
       "*": isSuperAdmin,
       sendCommand: isAuthenticated,
       setupSecondFactor: allow,
       authenticatePassword: allow,
-      authenticateSecondFactor: allow
+      authenticateSecondFactor: allow,
+      logout: allow
     },
     Account: {
       "*": isAuthenticated
@@ -418,7 +420,10 @@ function authorize(request: SmartLock.Request, args: Args) {
     SelfInspectionResult: isAuthenticated,
     AdminPrivilegePresetWithoutAccounts: isAuthenticated,
     PasswordAuthenticationResult: allow,
-    SecondFactorAuthenticationResult: allow
+    SecondFactorAuthenticationResult: allow,
+    TotpUtilities: {
+      generateSecret: allow
+    }
   }, { fallbackRule: isSuperAdmin })
 
   const apolloServer = await new ApolloGraphqlServer(

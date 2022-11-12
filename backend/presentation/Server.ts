@@ -12,6 +12,7 @@ import { applyMiddleware, IMiddleware, IMiddlewareGenerator } from 'graphql-midd
 
 type GraphqlContext = {
   setRefreshToken: (token: string) => void
+  clearSession: () => void,
   accessToken: AccessToken
 }
 
@@ -72,6 +73,9 @@ class ApolloGraphqlServer {
               expires: new Date(now.getTime() + offset),
               sameSite: this.config.environment == 'development' ? 'lax' : 'strict'
             })
+          },
+          clearSession: () => {
+            res.clearCookie("authorization")
           },
           accessToken
         }

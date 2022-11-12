@@ -170,6 +170,7 @@ const typeDefs = gql`
     # Auth
     authenticatePassword(username: String, password: String): PasswordAuthenticationResult
     authenticateSecondFactor(secondFactorToken: String, totp: String): SecondFactorAuthenticationResult
+    logout: Boolean
     # Claim Types
     createClaimType(name: String, dataType: CLAIM_TYPE_DATA_TYPE, options: [String]): ClaimType
     deleteClaimType(id: Int): ClaimType,
