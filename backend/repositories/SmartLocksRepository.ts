@@ -10,7 +10,7 @@ interface SmartLocksRepository {
   readById(id: string): Promise<SmartLock | undefined>
   readByIdIncludeDeviceAndAuthorizationRule(id: string): Promise<SmartLock | undefined>
   update(id: string, instance: { name?: string, authorizationRuleArgs?: string }): Promise<SmartLock | undefined>
-  updateDeviceProfileId(id: string, deviceId: number): Promise<SmartLock | undefined>
+  updateDeviceProfileId(id: string, deviceId: string): Promise<SmartLock | undefined>
   updateAuthorizationRule(id: string, rule: { id: number, args: string }): Promise<SmartLock | undefined>
   delete(id: string): Promise<SmartLock | undefined>
 }
@@ -45,7 +45,7 @@ class SequelizeSmartLocksRepository extends SequelizeRepositoryBase<SmartLock> i
 
   update = this.crud.update
 
-  updateDeviceProfileId = async (id: string, deviceId: number): Promise<SmartLock | undefined> => {
+  updateDeviceProfileId = async (id: string, deviceId: string): Promise<SmartLock | undefined> => {
     return await this.crud.update(id, {
       [`${SequelizeInstance.modelNames.deviceProfile}Id`]: deviceId
     })

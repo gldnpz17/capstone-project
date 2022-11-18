@@ -6,23 +6,40 @@ import { SequelizeInstance } from "./common/SequelizeModels"
 import { DeviceProfileMapper } from "./common/RepositoryMapper"
 
 interface DeviceProfilesRepository {
-  create(deviceProfile: { privateKey: string, publicKey: string }): Promise<DeviceProfile>
+  create(deviceProfile: { id: string, privateKey: string, publicKey: string, macAddress: string }): Promise<DeviceProfile>
   readAll(config: GenericReadAllConfig): Promise<DeviceProfile[]>
-  readById(id: number): Promise<DeviceProfile | undefined>
-  update(id: number, instance: { macAddress: string, verified: boolean }): Promise<DeviceProfile | undefined>
-  delete(id: number): Promise<DeviceProfile | undefined>
+  readById(id: string): Promise<DeviceProfile | undefined>
+  readByIdIncludeSmartLock(id: string): Promise<DeviceProfile | undefined>
+  delete(id: string): Promise<DeviceProfile | undefined>
 }
 
 class SequelizeDeviceProfilesRepository extends SequelizeRepositoryBase<DeviceProfile> {
+  smartLockModel = this.db.getModel(SequelizeInstance.modelNames.smartLock)
+
   constructor(
     db: SequelizeInstance,
-    mapper: DeviceProfileMapper
+    protected mapper: DeviceProfileMapper
   ) { super(db, mapper, SequelizeInstance.modelNames.deviceProfile) }
   
   create = this.crud.create
   readAll = this.crud.readAll
   readById = this.crud.readById
-  update = this.crud.update
+
+  readByIdIncludeSmartLock = async (id: string) => {
+    const deviceProfile = (await this.model
+      .findByPk(id, {
+        include: [this.smartLockModel]
+      }))
+      ?.toJSON()
+
+    if (!deviceProfile) return undefined
+
+    return this.mapper
+      .map(deviceProfile)
+      .addSmartLock(deviceProfile?.[SequelizeInstance.modelNames.smartLock])
+      .get()
+  }
+
   delete = this.crud.delete
 }
 

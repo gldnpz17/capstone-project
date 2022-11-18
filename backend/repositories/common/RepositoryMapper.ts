@@ -247,11 +247,28 @@ class SmartLockMapper extends EntityMapperBase<SmartLock> {
   }
 }
 
+class DeviceProfileExtender extends BaseExtender<DeviceProfile> {
+  constructor(
+    protected item: DeviceProfile,
+    private smartLockMapper: ShallowSmartLockMapper
+  ) { super(item) }
+
+  addSmartLock(original: any): this {
+    this.item.smartLock = this.smartLockMapper.map(original)
+    return this
+  }
+}
+
 class DeviceProfileMapper extends EntityMapperBase<DeviceProfile> {
-  override map(original: any): BaseExtender<DeviceProfile> {
-    const { id, privateKey, publicKey, macAddress, verified, connectionStatus } = original
-    return new BaseExtender(
-      new DeviceProfile(id, privateKey, publicKey, macAddress, verified, connectionStatus)
+  constructor(
+    private smartLockMapper: ShallowSmartLockMapper
+  ) { super() }
+
+  override map(original: any): DeviceProfileExtender {
+    const { id, privateKey, publicKey, macAddress, connectionStatus } = original
+    return new DeviceProfileExtender(
+      new DeviceProfile(id, privateKey, publicKey, macAddress, connectionStatus),
+      this.smartLockMapper
     ) 
   }
 }

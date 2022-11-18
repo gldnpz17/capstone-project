@@ -4,6 +4,7 @@ import { ClaimInstance, ClaimInstanceUnion } from "../domain-model/entities/Clai
 import { DeviceProfile } from "../domain-model/entities/DeviceProfile"
 import { SmartLock } from "../domain-model/entities/SmartLock"
 import { DeviceMessagingService } from "../domain-model/services/DeviceMessagingService"
+import { DeviceRegistrationService, VerificationToken } from "../domain-model/services/DeviceRegistrationService"
 import { DigitalSignatureService } from "../domain-model/services/DigitalSignatureService"
 import { KeyValueService } from "../domain-model/services/KeyValueService"
 import { RulesEngineService } from "../domain-model/services/RulesEngineService"
@@ -11,26 +12,15 @@ import { TransientTokenService } from "../domain-model/services/TransientTokenSe
 import { AccountsRepository } from "../repositories/AccountsRepository"
 import { DeviceProfilesRepository } from "../repositories/DeviceProfilesRepository"
 import { SmartLocksRepository } from "../repositories/SmartLocksRepository"
-
-type ConfirmationToken = {
-  tokenId: string
-  deviceId: number
-}
+import { v4 as uuidv4 } from 'uuid';
 
 type DeviceToken = {
   tokenId: string,
-  deviceId: number
+  deviceId: string
 }
 
-type ConnectResult = {
-  deviceId: number,
-  serverDomain: string,
-  devicePublicKey: string,
-  confirmationToken: string
-}
-
-type ConfirmationResult = {
-  deviceToken: string
+type DeviceVerificationResult = {
+  success: boolean
 }
 
 class SmartLockUseCases {
@@ -43,58 +33,43 @@ class SmartLockUseCases {
     private lockStatusStore: KeyValueService,
     private rulesEngineService: RulesEngineService,
     private deviceMessagingService: DeviceMessagingService,
-    private confirmationTokenService: TransientTokenService<ConfirmationToken>,
+    private verificationTokenService: TransientTokenService<VerificationToken>,
     private deviceTokenService: TransientTokenService<DeviceToken>,
-    private config: ApplicationConfiguration
+    private config: ApplicationConfiguration,
+    private deviceRegistrationService: DeviceRegistrationService
   ) { }
 
   create = this.repository.create
 
-  connect = async (smartLockId: string): Promise<ConnectResult> => {
-    const { privateKey, publicKey }  = this.digitalSignatureService.generateKeyPair()
+  propose = this.deviceRegistrationService.propose
 
-    const smartLock = await this.repository.readById(smartLockId)
+  verifyDevice = async (params: { smartLockId: string, deviceId: string }): Promise<DeviceVerificationResult> => {
+    const device = this.deviceRegistrationService.verify(params.deviceId)
 
-    if (!smartLock) throw new NotImplementedError()
+    if (!device) return { success: false }
 
-    const newDevice = await this.devicesRepository.create({
+    const { privateKey, publicKey } = this.digitalSignatureService.generateKeyPair()
+
+    await this.devicesRepository.create({
+      id: device.id,
       privateKey,
-      publicKey
+      publicKey,
+      macAddress: device.macAddress
     })
 
-    await this.repository.updateDeviceProfileId(smartLock.id, newDevice.id)
+    await this.repository.updateDeviceProfileId(params.smartLockId, params.deviceId)
 
-    const tokenBody = {
-      tokenId: Math.random().toString(),
-      deviceId: newDevice.id
-    }
-    const confirmationToken = await this.confirmationTokenService.generateToken(tokenBody, (body) => body.tokenId)
-
-    return {
-      deviceId: newDevice.id,
-      confirmationToken,
-      devicePublicKey: publicKey,
-      serverDomain: this.config.serverDomain
-    }
+    return { success: true }
   }
 
-  confirmDevice = async (params: { deviceId: number, confirmationToken: string, macAddress: string }): Promise<ConfirmationResult> => {
-    const { deviceId } = await this.confirmationTokenService.decodeToken(params.confirmationToken)
+  getDeviceToken = async (rawVerificationToken: string): Promise<string | null> => {
+    const verificationToken = await this.verificationTokenService.decodeToken(rawVerificationToken)
 
-    if (deviceId != params.deviceId) throw new NotImplementedError()
+    const device = await this.devicesRepository.readByIdIncludeSmartLock(verificationToken.deviceId)
 
-    const tokenBody: DeviceToken = {
-      tokenId: Math.random().toString(),
-      deviceId
-    }
-    const deviceToken = await this.deviceTokenService.generateToken(tokenBody, body => body.tokenId)
+    if (!device?.smartLock) return null
 
-    await this.devicesRepository.update(params.deviceId, {
-      verified: true,
-      macAddress: params.macAddress,
-    })
-
-    return { deviceToken }
+    return await this.deviceTokenService.generateToken({ tokenId: uuidv4(), deviceId: device.id }, token => token.tokenId)
   }
 
   ping = async (deviceProfileId: number): Promise<void> => {
@@ -135,4 +110,4 @@ class SmartLockUseCases {
   delete = this.repository.delete
 }
 
-export { SmartLockUseCases, ConfirmationToken, DeviceToken }
+export { SmartLockUseCases, DeviceToken }

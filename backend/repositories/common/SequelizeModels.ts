@@ -143,13 +143,14 @@ abstract class SequelizeInstance {
     })
 
     const DeviceProfile = this.sequelize.define(SequelizeInstance.modelNames.deviceProfile, {
+      id: {
+        type: DataTypes.UUIDV4,
+        allowNull: false,
+        primaryKey: true
+      },
       privateKey: DataTypes.STRING,
       publicKey: DataTypes.STRING,
       macAddress: DataTypes.STRING,
-      verified: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-      }
     })
 
     const SmartLock = this.sequelize.define(SequelizeInstance.modelNames.smartLock, {

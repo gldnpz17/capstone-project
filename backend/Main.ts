@@ -20,7 +20,7 @@ import { SequelizeReadResolvers } from './presentation/resolvers/SequelizeReadRe
 import { TotpUtilitiesResolvers } from './presentation/resolvers/TotpUtilitiesResolvers';
 import { ClaimTypeResolvers } from './presentation/resolvers/ClaimTypeResolvers';
 import { SmartLockResolvers } from './presentation/resolvers/SmartLockResolvers';
-import { ConfirmationToken, DeviceToken, SmartLockUseCases } from './use-cases/SmartLockUseCases';
+import { DeviceToken, SmartLockUseCases } from './use-cases/SmartLockUseCases';
 import { SequelizeSmartLocksRepository } from './repositories/SmartLocksRepository';
 import { SequelizeDeviceProfilesRepository } from './repositories/DeviceProfilesRepository';
 import { NodeRsaDigitalSignatureService } from './domain-model/services/DigitalSignatureService';
@@ -30,7 +30,7 @@ import { MockDeviceMessagingService } from './domain-model/services/DeviceMessag
 import { AuthorizationRuleResolvers } from './presentation/resolvers/AuthorizationRuleResolvers';
 import { AuthorizationRuleUseCases } from './use-cases/AuthorizationRuleUseCases';
 import { SequelizeAuthorizationRulesRepository } from './repositories/AuthorizationRulesRepository';
-import express from 'express';
+import express, { ErrorRequestHandler, RequestHandler, Response } from 'express';
 import { createServer } from 'http';
 import { DeviceProfile } from './domain-model/entities/DeviceProfile';
 import { AuthorizationError, NotImplementedError } from './common/Errors';
@@ -43,6 +43,7 @@ import { SelfInspectionResolvers } from './presentation/resolvers/SelfInspection
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
+import { InMemoryDeviceRegistrationService, VerificationToken } from './domain-model/services/DeviceRegistrationService';
 
 async function initDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
@@ -171,13 +172,14 @@ function authorize(request: SmartLock.Request, args: Args) {
     claimTypeMapper
   )
 
-  const deviceMapper = new DeviceProfileMapper()
+  const shallowSmartLockMapper = new ShallowSmartLockMapper()
+  
+  const deviceMapper = new DeviceProfileMapper(shallowSmartLockMapper)
   const devicesRepository = new SequelizeDeviceProfilesRepository(
     inMemoryDb,
     deviceMapper
   )
 
-  const shallowSmartLockMapper = new ShallowSmartLockMapper()
   const shallowAuthorizationRuleMapper = new ShallowAuthorizationRuleMapper()
 
   const smartLockMapper = new SmartLockMapper(
@@ -234,12 +236,17 @@ function authorize(request: SmartLock.Request, args: Args) {
     )
   )
 
-  const confirmationTokenService = new JwtTransientTokenService<ConfirmationToken>(
+  const verificationTokenService = new JwtTransientTokenService<VerificationToken>(
     config, 
-    "ConfirmationToken", 
+    "VerificationToken", 
     { singleUse: true, lifetime: 300000 }
   )
   const deviceTokenService = new JwtTransientTokenService<DeviceToken>(config, "DeviceToken")
+
+  const deviceRegistrationService = new InMemoryDeviceRegistrationService(
+    3 * 60 * 1000,
+    verificationTokenService
+  )
 
   const smartLockUseCases = new SmartLockUseCases(
     smartLocksRepository,
@@ -250,9 +257,10 @@ function authorize(request: SmartLock.Request, args: Args) {
     lockStatusStore,
     rulesEngineService,
     deviceMessagingService,
-    confirmationTokenService,
+    verificationTokenService,
     deviceTokenService,
-    config
+    config,
+    deviceRegistrationService
   )
 
   const authorizationRuleUseCases = new AuthorizationRuleUseCases(
@@ -271,6 +279,12 @@ function authorize(request: SmartLock.Request, args: Args) {
   const httpServer = createServer(expressApp)
 
   // TODO: Clean up these endpoints.
+  const wrapAsyncHandler = (handle: RequestHandler) => (req: any, res: any, next: any) => {
+    return Promise
+      .resolve(handle(req, res, next))
+      .catch(next);
+  }
+
   expressApp.use(express.json())
   expressApp.use(cookieParser())
 
@@ -283,7 +297,7 @@ function authorize(request: SmartLock.Request, args: Args) {
     console.log('CORS options set for a development environment.')
   }
 
-  expressApp.use(async (req, res, next) => {
+  expressApp.use(wrapAsyncHandler(async (req, res, next) => {
     const authorizationCookie = req.cookies['authorization']
 
     if (!authorizationCookie) {
@@ -325,7 +339,7 @@ function authorize(request: SmartLock.Request, args: Args) {
 
         res.cookie('authorization', authenticationToken, {
           httpOnly: true,
-          secure: config.environment == 'production',
+          secure: config.environment == 'production' || (config.environment == 'development' && req.headers.origin == 'https://studio.apollographql.com'),
           expires: new Date(now.getTime() + offset),
           sameSite: config.environment == 'development' ? 'lax' : 'strict'
         })
@@ -333,27 +347,39 @@ function authorize(request: SmartLock.Request, args: Args) {
         console.error('An authorization error has occured.')
         console.error(err)
         res.clearCookie('authorization')
-        next()
+        await next()
+        return
       }
     }
 
     req["accessToken"] = accessToken
 
     await next()
-  })
+  }))
 
-  expressApp.post('/devices/:id/confirm', async (req, res) => {
-    const { id } = req.params
-    const { confirmationToken, macAddress } = req.body
+  expressApp.post('/devices/propose', wrapAsyncHandler(async (req, res) => {
+    const { macAddress } = req.body
 
-    const result = await smartLockUseCases.confirmDevice({ 
-      deviceId: Number.parseInt(id),
-      confirmationToken,
-      macAddress
-    })
+    const result = await smartLockUseCases.propose(macAddress)
 
     res.status(200).json(result)
-  })
+  }))
+
+  expressApp.get('/devices/:id/proposal-status', wrapAsyncHandler(async (req, res) => {
+    const { id } = req.params
+
+    const status = await deviceRegistrationService.waitForVerificationStatus(id)
+
+    res.status(200).send(status)
+  }))
+
+  expressApp.post('/auth/get-device-token', wrapAsyncHandler(async (req, res) => {
+    const { verificationToken } = req.body
+
+    const deviceToken = await smartLockUseCases.getDeviceToken(verificationToken)
+
+    res.send(deviceToken)
+  }))
 
   const authorizeDevice = async (authorization: string | undefined, deviceId: string) => {
     if (!authorization) throw new NotImplementedError()
@@ -361,30 +387,38 @@ function authorize(request: SmartLock.Request, args: Args) {
     const [_, deviceToken] = authorization.split(' ')
     const { deviceId: tokenDeviceId } = await deviceTokenService.decodeToken(deviceToken)
 
-    if (tokenDeviceId != Number.parseInt(deviceId)) throw new NotImplementedError()
+    if (tokenDeviceId != deviceId) throw new NotImplementedError()
   }
 
-  expressApp.get('/devices/:id/messages/subscribe', async (req, res) => {
+  expressApp.get('/devices/:id/messages/subscribe', wrapAsyncHandler(async (req, res) => {
     const { id } = req.params
     const { authorization } = req.headers
-    //await authorizeDevice(authorization, id)
+    await authorizeDevice(authorization, id)
 
     const message = await deviceMessagingService.waitForMessage(id)
 
     res.status(200).setHeader('Content-Type', 'text/plain').send(message)
-  })
+  }))
 
-  expressApp.post('/devices/:id/ping', async (req, res) => {
+  expressApp.post('/devices/:id/ping', wrapAsyncHandler(async (req, res) => {
     const { id } = req.params
     const { authorization } = req.headers
-    //await authorizeDevice(authorization, id)
+    await authorizeDevice(authorization, id)
 
     smartLockUseCases.ping(Number.parseInt(id))
 
     console.log(`Ping received from ${id}.`)
 
     res.sendStatus(200)
-  })
+  }))
+
+  const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+    console.log('An unhandled error occured!')
+    console.log(err)
+    res.sendStatus(500)
+  }
+
+  expressApp.use(errorHandler)
 
   const isSuperAdmin = rule()(async (parent, args, ctx: GraphqlContext, info): Promise<IRuleResult> => {
     return ctx.accessToken.account.privilegePreset.isSuperAdmin
@@ -460,13 +494,6 @@ function authorize(request: SmartLock.Request, args: Args) {
   httpServer.listen(config.portNumber, () => {
     console.log(`Smart lock back end server started. Listening on port ${config.portNumber}.`)
   })
-
-  setInterval(() => {
-    deviceMessagingService.send(
-      new DeviceProfile(1, 'sekrit', 'notsekrit', '00:B0:D0:63:C2:26', true, "connected"),
-      "unlock"
-    )
-  }, 1000)
 }
 
 main()

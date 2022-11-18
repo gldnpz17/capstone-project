@@ -29,9 +29,8 @@ class SmartLockResolvers extends ResolversBase {
       createSmartLock: this.mapUseCase(this.useCases.create),
       updateSmartLock: this.mapUseCase(this.useCases.update, { spread: true }),
       deleteSmartLock: this.mapUseCase(this.useCases.delete, { spread: true }),
-      connectSmartLock: this.mapUseCase(this.useCases.connect, { spread: true }),
       pingDevice: this.mapUseCase(this.useCases.ping, { spread: true }),
-      confirmDevice: this.mapUseCase(this.useCases.confirmDevice),
+      verifyDevice: this.mapUseCase(this.useCases.verifyDevice),
       updateSmartLockRule: this.mapUseCase(this.useCases.updateSmartLockRule),
       sendCommand: async (_: any, args: sendCommandArgs, context: AccessToken ) => {
         return await this.useCases.sendCommand(args, context.account.id)

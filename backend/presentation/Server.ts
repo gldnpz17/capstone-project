@@ -65,13 +65,11 @@ class ApolloGraphqlServer {
             const now = new Date()
             const offset = 365 *24 * 60 * 60 * 1000
 
-            console.log(res.cookie)
-
             res.cookie("authorization", `Bearer ${token}`, {
               httpOnly: true,
-              secure: this.config.environment == 'production',
+              secure: this.config.environment == 'production' || (this.config.environment == 'development' && req.headers.origin == 'https://studio.apollographql.com'),
               expires: new Date(now.getTime() + offset),
-              sameSite: this.config.environment == 'development' ? 'lax' : 'strict'
+              sameSite: this.config.environment == 'development' ? 'none' : 'strict'
             })
           },
           clearSession: () => {

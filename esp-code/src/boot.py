@@ -1,5 +1,6 @@
 import gc
 import network
+import ubinascii
 
 gc.collect()
 
@@ -14,5 +15,16 @@ station.connect(ssid, password)
 while not station.isconnected():
     pass
 
-print('Connection successful')  # type: ignore
-print(station.ifconfig())  # type: ignore
+print(f'Station : {station.ifconfig()}')  # type: ignore
+
+mac_addr = station.config('mac')
+print(f'Mac address : {ubinascii.hexlify(mac_addr).decode()}')
+
+accessPoint = network.WLAN(network.AP_IF)
+accessPoint.active(True)
+accessPoint.config(essid='ESP32 AP', authmode=network.AUTH_WPA2_PSK, password='loremipsum123')
+
+while not accessPoint.active():
+    pass
+
+print(f'AP : {accessPoint.ifconfig()}')

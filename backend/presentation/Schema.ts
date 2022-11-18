@@ -103,13 +103,6 @@ const typeDefs = gql`
     errorMessage: String
   }
 
-  type ConnectResult {
-    deviceId: Int
-    serverDomain: String
-    devicePublicKey: String
-    confirmationToken: String
-  }
-
   type AdminPrivilegePresetWithoutAccounts {
     id: Int
     canManageAccounts: Boolean
@@ -158,6 +151,10 @@ const typeDefs = gql`
     name: String!
   }
 
+  type DeviceVerificationResult {
+    success: Boolean
+  }
+
   type Mutation {
     # Accounts
     registerAccount(username: String, password: String, privilegeId: Int): Account
@@ -180,8 +177,7 @@ const typeDefs = gql`
     createSmartLock(name: String!, wifiSsid: String, wifiPassword: String): SmartLock
     updateSmartLock(id: ID!, instance: UpdateSmartLockInput): SmartLock
     deleteSmartLock(id: ID!): SmartLock
-    connectSmartLock(id: ID!): ConnectResult
-    confirmDevice(deviceId: ID!, macAddress: String): DeviceProfile
+    verifyDevice(smartLockId: ID!, deviceId: ID!): DeviceVerificationResult
     pingDevice(id: ID!): Boolean
     updateSmartLockRule(id: String, ruleId: Int, ruleArgs: String): Boolean
     sendCommand(smartLockId: ID!, command: String): Boolean
