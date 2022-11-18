@@ -1,0 +1,16 @@
+{
+    "name": "esp-code",
+    "stubs": {
+        "esp32-micropython-1.15.0": "1.3.9"
+    },
+    "dev-packages": {
+        "micropy-cli": "*"
+    },
+    "packages": {
+        "urequests": "*"
+    },
+    "config": {
+        "vscode": true,
+        "pylint": true
+    }
+}

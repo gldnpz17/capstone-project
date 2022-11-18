@@ -1,0 +1,30 @@
+{
+    "python.linting.enabled": true,
+    "python.jediEnabled": false,
+    "python.autoComplete.extraPaths": [
+        ".micropy\\BradenM-micropy-stubs-ebac1d3\\frozen",
+        ".micropy\\BradenM-micropy-stubs-4f5a52a\\frozen",
+        ".micropy\\BradenM-micropy-stubs-ebac1d3\\stubs",
+        ".micropy\\esp-code"
+    ],
+    "python.autoComplete.typeshedPaths": [
+        ".micropy\\BradenM-micropy-stubs-ebac1d3\\frozen",
+        ".micropy\\BradenM-micropy-stubs-4f5a52a\\frozen",
+        ".micropy\\BradenM-micropy-stubs-ebac1d3\\stubs",
+        ".micropy\\esp-code"
+    ],
+    "python.analysis.typeshedPaths": [
+        ".micropy\\BradenM-micropy-stubs-ebac1d3\\frozen",
+        ".micropy\\BradenM-micropy-stubs-4f5a52a\\frozen",
+        ".micropy\\BradenM-micropy-stubs-ebac1d3\\stubs",
+        ".micropy\\esp-code"
+    ],
+    "python.linting.pylintEnabled": true,
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.extraPaths": [
+        ".micropy\\BradenM-micropy-stubs-ebac1d3\\frozen",
+        ".micropy\\BradenM-micropy-stubs-4f5a52a\\frozen",
+        ".micropy\\BradenM-micropy-stubs-ebac1d3\\stubs",
+        ".micropy\\esp-code"
+    ]
+}

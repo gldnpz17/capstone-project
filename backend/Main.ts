@@ -42,11 +42,12 @@ import { AuthenticationTokenUtils } from './presentation/common/AuthenticationTo
 import { SelfInspectionResolvers } from './presentation/resolvers/SelfInspectionResolvers';
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
+import dotenv from 'dotenv'
 
 async function initDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
   accountUseCases: AccountUseCases,
-
+  smartLockUseCases: SmartLockUseCases
 ) {
   const name = await claimTypeUseCases.create({ name: 'Name', dataType: 'string', options: [] })
   const department = await claimTypeUseCases.create({ name: 'Department', dataType: 'enum', options: [] })
@@ -105,9 +106,13 @@ async function initDatabase(
     value: 23
   })
 
+  await smartLockUseCases.create({ name: 'Test Lock #1' })
+  await smartLockUseCases.create({ name: 'Test Lock #2' })
 }
 
 async function main() {
+  dotenv.config()
+
   const DEFAULT_AUTHORIZATION_RULE = 
 `class Args {
   foo: string
@@ -134,7 +139,7 @@ function authorize(request: SmartLock.Request, args: Args) {
     ],
     DEFAULT_AUTHORIZATION_RULE,
     4000,
-    'localhost:4000',
+    process.env.SERVER_DOMAIN_NAME ?? 'localhost:4000',
     2000,
     'development'
   )
@@ -260,7 +265,7 @@ function authorize(request: SmartLock.Request, args: Args) {
 
   const authenticationTokenUtils = new AuthenticationTokenUtils()
 
-  await initDatabase(claimTypeUseCases, accountUseCases)
+  await initDatabase(claimTypeUseCases, accountUseCases, smartLockUseCases)
 
   const expressApp = express()
   const httpServer = createServer(expressApp)
@@ -362,19 +367,21 @@ function authorize(request: SmartLock.Request, args: Args) {
   expressApp.get('/devices/:id/messages/subscribe', async (req, res) => {
     const { id } = req.params
     const { authorization } = req.headers
-    await authorizeDevice(authorization, id)
+    //await authorizeDevice(authorization, id)
 
     const message = await deviceMessagingService.waitForMessage(id)
 
-    res.status(200).send(message)
+    res.status(200).setHeader('Content-Type', 'text/plain').send(message)
   })
 
   expressApp.post('/devices/:id/ping', async (req, res) => {
     const { id } = req.params
     const { authorization } = req.headers
-    await authorizeDevice(authorization, id)
+    //await authorizeDevice(authorization, id)
 
     smartLockUseCases.ping(Number.parseInt(id))
+
+    console.log(`Ping received from ${id}.`)
 
     res.sendStatus(200)
   })
@@ -454,12 +461,12 @@ function authorize(request: SmartLock.Request, args: Args) {
     console.log(`Smart lock back end server started. Listening on port ${config.portNumber}.`)
   })
 
-  /*setInterval(() => {
+  setInterval(() => {
     deviceMessagingService.send(
       new DeviceProfile(1, 'sekrit', 'notsekrit', '00:B0:D0:63:C2:26', true, "connected"),
       "unlock"
     )
-  }, 1000)*/
+  }, 1000)
 }
 
 main()

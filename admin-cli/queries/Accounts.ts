@@ -9,6 +9,14 @@ const AUTHENTICATE_PASSWORD = gql`
   }
 `
 
+const AUTHENTICATE_SECOND_FACTOR = gql`
+  mutation AuthenticateSecondFactor($secondFactorToken: String, $totp: String) {
+    authenticateSecondFactor(secondFactorToken: $secondFactorToken, totp: $totp) {
+      refreshToken
+    }
+  }
+`
+
 const GENERATE_TOTP_SECRET = gql`
   query GenerateTotpSecret {
     totp {
@@ -28,5 +36,6 @@ const SETUP_TOTP = gql`
 export {
   AUTHENTICATE_PASSWORD,
   GENERATE_TOTP_SECRET,
-  SETUP_TOTP
+  SETUP_TOTP,
+  AUTHENTICATE_SECOND_FACTOR
 }
