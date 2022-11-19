@@ -7,7 +7,7 @@ import { DeviceMessagingService } from "../domain-model/services/DeviceMessaging
 import { DeviceRegistrationService, VerificationToken } from "../domain-model/services/DeviceRegistrationService"
 import { DigitalSignatureService } from "../domain-model/services/DigitalSignatureService"
 import { KeyValueService } from "../domain-model/services/KeyValueService"
-import { RulesEngineService } from "../domain-model/services/RulesEngineService"
+import { ExecutionResult, RulesEngineService } from "../domain-model/services/RulesEngineService"
 import { TransientTokenService } from "../domain-model/services/TransientTokenService"
 import { AccountsRepository } from "../repositories/AccountsRepository"
 import { DeviceProfilesRepository } from "../repositories/DeviceProfilesRepository"
@@ -22,6 +22,8 @@ type DeviceToken = {
 type DeviceVerificationResult = {
   success: boolean
 }
+
+type UserFacingExecutionResult = Pick<ExecutionResult, "authorized" | "denyMessage">
 
 class SmartLockUseCases {
   constructor(
@@ -72,11 +74,11 @@ class SmartLockUseCases {
     return await this.deviceTokenService.generateToken({ tokenId: uuidv4(), deviceId: device.id }, token => token.tokenId)
   }
 
-  ping = async (deviceProfileId: number): Promise<void> => {
-    this.deviceStatusStore.set(deviceProfileId.toString(), 'connected')
+  ping = async (deviceProfileId: string): Promise<void> => {
+    this.deviceStatusStore.set(deviceProfileId, 'connected')
   }
 
-  sendCommand = async (request: { smartLockId: string, command: string }, accountId: string) => {
+  sendCommand = async (request: { smartLockId: string, command: string }, accountId: string): Promise<UserFacingExecutionResult> => {
     const smartLock = await this.repository.readByIdIncludeDeviceAndAuthorizationRule(request.smartLockId)
 
     if (!smartLock?.authorizationRule || !smartLock?.authorizationRuleArgs) throw new NotImplementedError()
@@ -93,11 +95,33 @@ class SmartLockUseCases {
     )
 
     if (result.authorized) {
-      this.deviceMessagingService.send(smartLock.device, request.command)
-    } else {
-      if (!result.errorMessage) throw new NotImplementedError()
-      throw new Error(result.errorMessage)
+      const updatedLockStatus = (await this.repository
+        .updateLockStatus(
+          smartLock.id, 
+          this.deviceMessagingService.commands.toStatus(request.command)
+        ))
+        ?.lockStatus
+
+      if (!updatedLockStatus) throw new NotImplementedError()
+
+      this.deviceMessagingService.send(
+        smartLock.device,
+        this.deviceMessagingService.commands.fromStatus(updatedLockStatus)
+      )
     }
+
+    return ({
+      authorized: result.authorized,
+      denyMessage: result.denyMessage
+    })
+  }
+
+  syncCommand = async (deviceId: string): Promise<string> => {
+    const device = await this.devicesRepository.readByIdIncludeSmartLock(deviceId)
+
+    if (!device?.smartLock) throw new NotImplementedError()
+
+    return this.deviceMessagingService.commands.fromStatus(device.smartLock.lockStatus)
   }
 
   update = this.repository.update

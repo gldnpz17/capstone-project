@@ -5,7 +5,8 @@ import { JwtTransientTokenService } from './domain-model/services/TransientToken
 import { SequelizeAccountsRepository } from "./repositories/AccountsRepository";
 import { InMemorySqliteSequelizeInstance } from './repositories/common/SequelizeModels';
 import { AccountUseCases, AccessToken, RefreshToken, SecondFactorSetupToken, SecondFactorToken } from "./use-cases/AccountUseCases";
-import { authenticator } from 'otplib'
+import { AuthenticationTokenUtils } from './presentation/common/AuthenticationTokenUtils';
+import { SelfInspectionResolvers } from './presentation/resolvers/SelfInspectionResolvers';
 import { AccountMapper, AdminPrivilegePresetMapper, ClaimInstanceMapper, ClaimTypeMapper, EnumClaimTypeOptionsMapper, PasswordCredentialMapper, TotpCredentialMapper, SmartLockMapper, DeviceProfileMapper, AuthorizationRuleMapper, ShallowSmartLockMapper, ShallowAuthorizationRuleMapper, ShallowAccountMapper } from './repositories/common/RepositoryMapper';
 import { AdminPrivilegeUseCases } from './use-cases/AdminPrivilegeUseCases';
 import { SequelizeAdminPrivilegePresetRepository } from './repositories/AdminPrivilegePresetRepository';
@@ -30,20 +31,16 @@ import { MockDeviceMessagingService } from './domain-model/services/DeviceMessag
 import { AuthorizationRuleResolvers } from './presentation/resolvers/AuthorizationRuleResolvers';
 import { AuthorizationRuleUseCases } from './use-cases/AuthorizationRuleUseCases';
 import { SequelizeAuthorizationRulesRepository } from './repositories/AuthorizationRulesRepository';
-import express, { ErrorRequestHandler, RequestHandler, Response } from 'express';
+import { InMemoryDeviceRegistrationService, VerificationToken } from './domain-model/services/DeviceRegistrationService';
+import express, { ErrorRequestHandler, RequestHandler } from 'express';
+import { authenticator } from 'otplib'
 import { createServer } from 'http';
-import { DeviceProfile } from './domain-model/entities/DeviceProfile';
-import { AuthorizationError, NotImplementedError } from './common/Errors';
-import morgan from 'morgan'
-import bodyParser from 'body-parser';
-import { shield, rule, allow, deny, or } from 'graphql-shield';
+import { NotImplementedError } from './common/Errors';
+import { shield, rule, allow, or } from 'graphql-shield';
 import { IRuleResult } from 'graphql-shield/typings/types';
-import { AuthenticationTokenUtils } from './presentation/common/AuthenticationTokenUtils';
-import { SelfInspectionResolvers } from './presentation/resolvers/SelfInspectionResolvers';
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
-import { InMemoryDeviceRegistrationService, VerificationToken } from './domain-model/services/DeviceRegistrationService';
 
 async function initDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
@@ -337,11 +334,13 @@ function authorize(request: SmartLock.Request, args: Args) {
 
         console.log(`Refreshing the access token. New token: ${authenticationToken}`)
 
+        const isApolloStudio = config.environment == 'development' && req.headers.origin == 'https://studio.apollographql.com'
+
         res.cookie('authorization', authenticationToken, {
           httpOnly: true,
-          secure: config.environment == 'production' || (config.environment == 'development' && req.headers.origin == 'https://studio.apollographql.com'),
+          secure: config.environment == 'production' || isApolloStudio,
           expires: new Date(now.getTime() + offset),
-          sameSite: config.environment == 'development' ? 'lax' : 'strict'
+          sameSite: config.environment == 'development' ? (isApolloStudio ? 'none' : 'lax') : 'strict'
         })
       } catch(err) {
         console.error('An authorization error has occured.')
@@ -400,12 +399,22 @@ function authorize(request: SmartLock.Request, args: Args) {
     res.status(200).setHeader('Content-Type', 'text/plain').send(message)
   }))
 
+  expressApp.get('/devices/:id/sync-command', wrapAsyncHandler(async (req, res) => {
+    const { id } = req.params
+    const { authorization } = req.headers
+    await authorizeDevice(authorization, id)
+
+    const command = await smartLockUseCases.syncCommand(id)
+
+    res.status(200).setHeader('Content-Type', 'text/plain').send(command)
+  }))
+
   expressApp.post('/devices/:id/ping', wrapAsyncHandler(async (req, res) => {
     const { id } = req.params
     const { authorization } = req.headers
     await authorizeDevice(authorization, id)
 
-    smartLockUseCases.ping(Number.parseInt(id))
+    smartLockUseCases.ping(id)
 
     console.log(`Ping received from ${id}.`)
 
@@ -464,7 +473,8 @@ function authorize(request: SmartLock.Request, args: Args) {
     SecondFactorAuthenticationResult: allow,
     TotpUtilities: {
       generateSecret: allow
-    }
+    },
+    ExecutionResult: isAuthenticated
   }, { fallbackRule: isSuperAdmin })
 
   const apolloServer = await new ApolloGraphqlServer(

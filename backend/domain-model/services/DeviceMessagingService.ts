@@ -1,7 +1,14 @@
+import { NotImplementedError } from "../../common/Errors";
 import { DeviceProfile } from "../entities/DeviceProfile";
+
+type CommandOperations = {
+  toStatus: (command: string) => string,
+  fromStatus: (status: string) => string
+}
 
 interface DeviceMessagingService {
   send(device: DeviceProfile, message: string): void
+  commands: CommandOperations
 }
 
 type SubscriptionFunction = (message: string) => void
@@ -35,6 +42,20 @@ class MockDeviceMessagingService implements DeviceMessagingService {
         resolve(message)
       })
     })
+  }
+
+  _commands = ["lock", "unlock"]
+  _statuses = ["locked", "unlocked"]
+
+  _matchArray = (source: string[], target: string[]) => (item: string): string => {
+    const index = source.indexOf(item)
+    if (index == -1) throw new NotImplementedError()
+    return target[index]
+  }
+
+  commands: CommandOperations = {
+    toStatus: this._matchArray(this._commands, this._statuses),
+    fromStatus: this._matchArray(this._statuses, this._commands)
   }
 }
 

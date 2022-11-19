@@ -1,4 +1,3 @@
-import LoginForm from './pages/LoginForm.js'
 import AccManagement from './pages/AccManagement'
 import { BrowserRouter, createBrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css';
@@ -11,7 +10,7 @@ import { NavSideBar } from './components/NavSideBar.js';
 import { LockScannerPage } from './pages/LockScanner.js';
 
 const link = createHttpLink({
-    uri: "http://localhost:4000/graphql",
+    uri: "/graphql",
     credentials: 'include'
 })
 

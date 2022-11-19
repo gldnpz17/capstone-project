@@ -52,17 +52,31 @@ async def get_message(serverDomainName, deviceId, deviceToken):
         print(response)  # type: ignore
 
 async def send_ping(serverDomainName, deviceId, deviceToken):
-    response = await aurequests.post(
-        f'http://{serverDomainName}/devices/{deviceId}/ping',
-        headers={ 'authorization': f'Bearer {deviceToken}'}
-    )
+    response = None
+    while not response:
+        try:
+            response = await aurequests.post(
+                f'http://{serverDomainName}/devices/{deviceId}/ping',
+                headers={ 'authorization': f'Bearer {deviceToken}'}
+            )
+        except aurequests.TimeoutError: # type: ignore
+            print("send_ping timed out. retrying...")
+
     if response.status_code == 200:
         print('Ping successful.')  # type: ignore
     else:
         print('(Ping) An error has occured.')  # type: ignore
         print(response)  # type: ignore
 
-async def subscribe_to_data(deviceId, serverDomainName, deviceToken):
+async def sync_command(serverDomainName, deviceId, deviceToken):
+    response = await aurequests.get(
+        f'http://{serverDomainName}/devices/{deviceId}/sync-command',
+        headers={ 'authorization': f'Bearer {deviceToken}'}
+    )
+
+    print(f"Synced command : {response.text}")
+
+async def subscribe_to_data(serverDomainName, deviceId, deviceToken):
     while True:
         data = await get_message(serverDomainName, deviceId, deviceToken)  # type: ignore
         print(f"Data received : {data}") # type: ignore
@@ -84,7 +98,9 @@ async def connect(setupMessage, event_loop):
     if proposalStatus == 'true':
         deviceToken = await get_device_token(serverDomainName, verificationToken)
         print(f'Device token : {deviceToken}')
+        await sync_command(serverDomainName, id, deviceToken)
         event_loop.create_task(periodically_send_ping(serverDomainName, id, deviceToken))
+        event_loop.create_task(subscribe_to_data(serverDomainName, id, deviceToken))
 
     # event_loop.create_task(subscribe_to_data(deviceId, serverDomainName, deviceToken))  # type: ignore
     # event_loop.create_task(periodically_send_ping(deviceId, serverDomainName, deviceToken)) # type: ignore

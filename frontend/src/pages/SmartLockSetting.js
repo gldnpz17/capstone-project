@@ -7,8 +7,11 @@ import { useMutation, useQuery } from "@apollo/client";
 import { CREATE_AUTHORIZATION_RULE, READ_ALL_AUTHORIZATION_RULES } from "../queries/AuthorizationRule";
 import { TabPanel } from "../components/TabPanel";
 import { AuthorizationRuleArgsForm } from "../components/AuthorizationRuleArgsForm";
-import { READ_ALL_LOCKS, UPDATE_SMART_LOCK_RULE } from "../queries/SmartLocks";
-import { Edit } from "@mui/icons-material";
+import { READ_ALL_LOCKS, UPDATE_SMART_LOCK_RULE, VERIFY_DEVICE } from "../queries/SmartLocks";
+import { Edit, Link, QrCode } from "@mui/icons-material";
+import { handleForm } from "../common/handleForm";
+import QRCode from 'qrcode'
+import html2pdf from "html2pdf.js";
 
 const SecuritySection = ({ lock, authorizationRules }) => {
     const [createAuthorizationRule] = useMutation(CREATE_AUTHORIZATION_RULE)
@@ -53,6 +56,10 @@ const SecuritySection = ({ lock, authorizationRules }) => {
         }
     }, [])
 
+    const openRuleEditor = (id) => {
+        window.open(`/admin/editor/${id}`, '_blank').focus()
+    }
+
     const createNewRule = async () => {
         const { 
             data: { 
@@ -60,7 +67,13 @@ const SecuritySection = ({ lock, authorizationRules }) => {
             }
         } = await createAuthorizationRule()
 
-        window.open(`/admin/editor/${id}`, '_blank').focus()
+        openRuleEditor(id)
+    }
+
+    const handleEditRule = (id) => (e) => {
+        e.stopPropagation()
+
+        openRuleEditor(id)
     }
 
     const handleRuleChange = (e) => {
@@ -93,7 +106,14 @@ const SecuritySection = ({ lock, authorizationRules }) => {
                 >
                     <MenuItem key="no-rule" value="no-rule">No authorization rule</MenuItem>
                     {authorizationRules?.map(rule => (
-                        <MenuItem key={rule.id} value={rule.id} sx={{ textAlign: "left" }}>{rule.name}</MenuItem>
+                        <MenuItem key={rule.id} value={rule.id} sx={{ textAlign: "left" }}>
+                            <Stack direction="row" alignItems="center" width="100%">
+                                <Typography sx={{ flexGrow: 1 }}>{rule.name}</Typography>
+                                <IconButton onClick={handleEditRule(rule.id)}>
+                                    <Edit />
+                                </IconButton>
+                            </Stack>
+                        </MenuItem>
                     ))}
                 </TextField>
             </Grid>
@@ -116,10 +136,73 @@ const SecuritySection = ({ lock, authorizationRules }) => {
     )
 }
 
+const VerifyDevice = ({ lock, close }) => {
+    const [verifyDevice] = useMutation(VERIFY_DEVICE, {
+        refetchQueries: [{ query: READ_ALL_LOCKS }]
+    })
+
+    const handleSubmit = handleForm(async ({ deviceId }) => {
+        await verifyDevice({
+            variables: { 
+                smartLockId: lock.id,
+                deviceId
+            }
+        })
+        close()
+    }, ["deviceId"])
+
+    return (
+        <Stack spacing={2}>
+            <Typography>
+                Scan the QR code in the ESP configuration page or enter the device ID manually
+            </Typography>
+            <form onSubmit={handleSubmit}>
+                <Stack direction="row" spacing={1} justifyContent="center">
+                    <TextField name="deviceId" label="Device ID" size="small" />
+                    <Button type="submit" variant="contained">Verify</Button>
+                </Stack>
+            </form>
+            <Button onClick={close} color="error" variant="contained">Cancel</Button>
+        </Stack>
+    )
+}
+
 function SmartLockSetting({ lock }) {
+    const [mode, setMode] = useState("settings")
+
+    const printQrCode = async () => {
+        const container = document.createElement("div")
+        container.style.padding = '2rem'
+
+        const qrImage = document.createElement("img")
+        const qrDataUrl = await QRCode.toDataURL(lock.id, { width: 1024 })
+        qrImage.src = qrDataUrl
+        qrImage.style.width = '32rem'
+        qrImage.style.aspectRatio = '1'
+
+        const lockNameDiv = document.createElement("div")
+        const lockNameText = document.createTextNode(lock.name)
+        lockNameDiv.appendChild(lockNameText)
+        lockNameDiv.style.textAlign = 'center'
+
+        container.appendChild(qrImage)
+        container.appendChild(lockNameDiv)
+
+        const result = await html2pdf()
+            .from(container)
+            .set({ margin: 2, filename: `qrcode_${lock.name.toLowerCase()}` })
+            .toPdf()
+            .get('pdf')
+
+        window.open(result.output('bloburl'), '_blank')
+    }
+
     const {
-        data: { authorizationRules } = {}
+        data: { authorizationRules } = {},
+        loading: authorizationRulesLoading
     } = useQuery(READ_ALL_AUTHORIZATION_RULES)
+
+    if (authorizationRulesLoading) return <></>
 
     return(
         <div className="cover-setting" style={{ zIndex: 3000 }}>
@@ -130,20 +213,36 @@ function SmartLockSetting({ lock }) {
                     </Typography> 
                     <Stack direction="row" alignItems="center" gap={1}>
                         <Typography align="left" style={{ fontWeight: 500 }} color="#333333">
-                            <b>Lock :</b> E6
+                            <b>Lock :</b> {lock.name}
                         </Typography>
                         <IconButton>
                             <Edit />
                         </IconButton>
+                        <Box sx={{ flexGrow: 1 }} />
+                        <IconButton onClick={printQrCode}>
+                            <QrCode />
+                        </IconButton>
                     </Stack>
-                    <Typography>
-                        <b>Device MAC Address :</b> N/A
-                    </Typography>
+                    <Stack direction="row" alignItems="center">
+                        <Typography sx={{ flexGrow: 1 }}>
+                            <b>Device MAC Address :</b> {lock?.device?.macAddress ?? 'N/A'}
+                        </Typography>
+                        <IconButton onClick={() => setMode('verify')}>
+                            <Link />
+                        </IconButton>
+                    </Stack>
                 </Stack>
                 <Grid>
                     <Card style={{ width: 500, p: 2, margin: "0 auto" }}>
                         <CardContent>
-                            <SecuritySection {...{ authorizationRules, lock }} />
+                            {(() => {
+                                switch (mode) {
+                                    case 'settings':
+                                        return <SecuritySection {...{ authorizationRules, lock }} />
+                                    case 'verify':
+                                        return <VerifyDevice {...{ lock, close: () => setMode('settings') }} />
+                                }
+                            })()}
                         </CardContent>
                     </Card>
                 </Grid>

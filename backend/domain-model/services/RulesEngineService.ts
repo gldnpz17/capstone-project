@@ -271,5 +271,6 @@ authorize(globals.request, globals.args)`)
 
 export {
   RulesEngineService,
-  TypeScriptRulesEngineService
+  TypeScriptRulesEngineService,
+  ExecutionResult
 }

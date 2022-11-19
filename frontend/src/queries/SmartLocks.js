@@ -8,6 +8,7 @@ const READ_ALL_LOCKS = gql`
       lockStatus
       device {
         connectionStatus
+        macAddress
       }
       authorizationRule {
         id
@@ -39,9 +40,37 @@ const UPDATE_SMART_LOCK_RULE = gql`
   }
 `
 
+const VERIFY_DEVICE = gql`
+  mutation VerifyDevice($smartLockId: ID!, $deviceId: ID!) {
+    verifyDevice(smartLockId: $smartLockId, deviceId: $deviceId) {
+      success
+    }
+  }
+`
+
+const SEND_COMMAND = gql`
+  mutation SendCommand($smartLockId: ID!, $command: String) {
+    sendCommand(smartLockId: $smartLockId, command: $command) {
+      authorized
+      denyMessage
+    }
+  }
+`
+
+const READ_SMART_LOCK_STATUS = gql`
+  query ReadSmartLockStatus($id: String) {
+    smartLocks(id: $id) {
+      lockStatus
+    }
+  }
+`
+
 export {
   READ_ALL_LOCKS,
   CREATE_LOCK,
   DELETE_LOCK,
-  UPDATE_SMART_LOCK_RULE
+  UPDATE_SMART_LOCK_RULE,
+  VERIFY_DEVICE,
+  SEND_COMMAND,
+  READ_SMART_LOCK_STATUS
 }

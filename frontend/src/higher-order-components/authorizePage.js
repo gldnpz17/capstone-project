@@ -7,6 +7,10 @@ const allowSuperAdmin = (account) => {
   return account.privilegePreset.isSuperAdmin
 }
 
+const allowAuthenticated = (account) => {
+  return Boolean(account)
+}
+
 const authorizePage = (challengePath, rules) => (Page) => {
   return (pageProps) => {
     const navigate = useNavigate()
@@ -29,5 +33,10 @@ const authorizePage = (challengePath, rules) => (Page) => {
 }
 
 const authorizeSuperAdminPage = authorizePage("/admin/login", [allowSuperAdmin])
+const authorizeAuthenticatedPage = authorizePage("/login", [allowAuthenticated])
 
-export { authorizePage, authorizeSuperAdminPage }
+export { 
+  authorizePage, 
+  authorizeSuperAdminPage, 
+  authorizeAuthenticatedPage 
+}

@@ -155,6 +155,11 @@ const typeDefs = gql`
     success: Boolean
   }
 
+  type ExecutionResult {
+    authorized: Boolean
+    denyMessage: String
+  }
+
   type Mutation {
     # Accounts
     registerAccount(username: String, password: String, privilegeId: Int): Account
@@ -180,7 +185,7 @@ const typeDefs = gql`
     verifyDevice(smartLockId: ID!, deviceId: ID!): DeviceVerificationResult
     pingDevice(id: ID!): Boolean
     updateSmartLockRule(id: String, ruleId: Int, ruleArgs: String): Boolean
-    sendCommand(smartLockId: ID!, command: String): Boolean
+    sendCommand(smartLockId: ID!, command: String): ExecutionResult
     # Authorization Rules
     createAuthorizationRule: AuthorizationRule
     saveAuthorizationRuleChanges(id: ID!, authorizationRule: String): Boolean

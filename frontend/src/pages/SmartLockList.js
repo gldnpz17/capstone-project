@@ -12,6 +12,7 @@ import { handleForm } from '../common/handleForm'
 import { useModal } from '../hooks/useModal';
 import SmartLockSetting from './SmartLockSetting';
 import { useOutletContext } from 'react-router-dom';
+import { authorizeSuperAdminPage } from '../higher-order-components/authorizePage';
 
 function QuickSearchToolbar() {
   return (
@@ -28,7 +29,7 @@ function QuickSearchToolbar() {
   );
 }
 
-export default function SmartLockList() {
+function SmartLockList() {
   const {
     data: { smartLocks } = { smartLocks: [] }
   } = useQuery(READ_ALL_LOCKS)
@@ -132,3 +133,5 @@ export default function SmartLockList() {
     </div>
   );
 }
+
+export default authorizeSuperAdminPage(SmartLockList)

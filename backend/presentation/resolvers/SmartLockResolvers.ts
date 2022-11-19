@@ -1,6 +1,7 @@
 import { KeyValueService } from "../../domain-model/services/KeyValueService";
 import { AccessToken } from "../../use-cases/AccountUseCases";
 import { SmartLockUseCases } from "../../use-cases/SmartLockUseCases";
+import { GraphqlContext } from "../Server";
 import { ResolversBase } from "./common/ResolversBase";
 
 type sendCommandArgs = {
@@ -32,8 +33,8 @@ class SmartLockResolvers extends ResolversBase {
       pingDevice: this.mapUseCase(this.useCases.ping, { spread: true }),
       verifyDevice: this.mapUseCase(this.useCases.verifyDevice),
       updateSmartLockRule: this.mapUseCase(this.useCases.updateSmartLockRule),
-      sendCommand: async (_: any, args: sendCommandArgs, context: AccessToken ) => {
-        return await this.useCases.sendCommand(args, context.account.id)
+      sendCommand: async (_: any, args: sendCommandArgs, context: GraphqlContext ) => {
+        return await this.useCases.sendCommand(args, context.accessToken.account.id)
       }
     }
   }
