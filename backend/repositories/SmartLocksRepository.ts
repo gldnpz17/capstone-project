@@ -53,7 +53,11 @@ class SequelizeSmartLocksRepository extends SequelizeRepositoryBase<SmartLock> i
   }
 
   updateLockStatus = async (id: string, lockStatus: string): Promise<SmartLock | undefined> => {
-    return await this.crud.update(id, { lockStatus })
+    const lock = await this.model.findByPk(id)
+    if (!lock) return undefined
+    lock["lockStatus"] = lockStatus
+    await lock.save()
+    return lock.toJSON()
   }
 
   updateAuthorizationRule = async (id: string, rule: { id: number, args: string }): Promise<SmartLock | undefined> => {

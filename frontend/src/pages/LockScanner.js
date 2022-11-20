@@ -12,8 +12,8 @@ const LockScannerPage = () => {
   const [sendCommand] = useMutation(SEND_COMMAND)
   const [getSmartLockStatus, { 
     data: { smartLocks: [{ lockStatus }] } = { smartLocks: [{}] }, 
-    loading 
-  }] = useLazyQuery(READ_SMART_LOCK_STATUS)
+    loading,
+  }] = useLazyQuery(READ_SMART_LOCK_STATUS, { fetchPolicy: 'network-only' })
   const [stream, setStream] = useState(null)
 
   const videoRef = useRef()
@@ -77,7 +77,8 @@ const LockScannerPage = () => {
         data: { sendCommand: { authorized, denyMessage } },
         errors
       } = await sendCommand({
-        variables: { smartLockId, command }
+        variables: { smartLockId, command },
+        refetchQueries: [{ query: READ_SMART_LOCK_STATUS }]
       })
   
       if (errors) {

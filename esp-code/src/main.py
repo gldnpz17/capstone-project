@@ -237,6 +237,19 @@ async def start_server(event_loop):
         await response.send(status)
 
     relay = Pin(14, Pin.OUT)
+    led_green = Pin(27, Pin.OUT)
+    def handleMessage(message):
+        print(f"Received message from the server : {message}")
+        nonlocal relay
+        nonlocal led_green
+        if message == "lock":
+            print('Relay turned on.')
+            relay.value(1)
+            led_green.value(0)
+        if message == "unlock":
+            print('Relay turned off.')
+            relay.value(0)
+            led_green.value(1)
 
     @app.route('/api/connect', methods=['POST'], save_headers=['Content-Length'])
     async def setupConnection(request, response):
@@ -244,11 +257,12 @@ async def start_server(event_loop):
         serverDomainName = await request.read_data()
         print(f'Attempting to connect to {serverDomainName}.')
         nonlocal serverConnection
+        nonlocal handleMessage
         if serverConnection:
             serverConnection.destroy()
         serverConnection = ServerConnection(
             serverDomainName,
-            lambda message : print(f"Message received from the server : {message}"), 
+            handleMessage, 
             event_loop
         )
         id = await serverConnection.propose()
@@ -267,3 +281,4 @@ def main():
     event_loop.run_forever()
 
 print('main.py loaded.')
+main()

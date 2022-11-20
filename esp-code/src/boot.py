@@ -4,6 +4,14 @@ import ubinascii
 
 gc.collect()
 
+DEVELOPMENT_MODE = True
+
+if DEVELOPMENT_MODE:
+    print("Enabling webrepl.")
+    import webrepl # type: ignore
+    webrepl.start()
+    print("webrepl enabled.")
+
 print('Program started.')  # type: ignore
 
 ssid = 'gldnpz'
