@@ -45,7 +45,8 @@ import dotenv from 'dotenv'
 async function initDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
   accountUseCases: AccountUseCases,
-  smartLockUseCases: SmartLockUseCases
+  smartLockUseCases: SmartLockUseCases,
+  authorizationRuleUseCases: AuthorizationRuleUseCases
 ) {
   const name = await claimTypeUseCases.create({ name: 'Name', dataType: 'string', options: [] })
   const department = await claimTypeUseCases.create({ name: 'Department', dataType: 'enum', options: [] })
@@ -64,48 +65,60 @@ async function initDatabase(
     value: 'Medicine'
   })
 
-  const aliceTotpSecret = "OZEEUWBQBBNSYLQE"
-  const aliceToken = authenticator.generate(aliceTotpSecret)
-  const alice = await accountUseCases.register({ 
-    username: 'alice123', 
-    password: 'hunter02',
+  const bismaTotpSecret = "OZEEUWBQBBNSYLQE"
+  const bismaToken = authenticator.generate(bismaTotpSecret)
+  const bisma = await accountUseCases.register({ 
+    username: 'firdaus_bisma', 
+    password: 'fuckinghell',
     privilegeId: 2
   })
   const authenticationResult = await accountUseCases.authenticatePassword({
-    username: alice.username,
-    password: 'hunter02'
+    username: bisma.username,
+    password: 'fuckinghell'
   })
-  if (!authenticationResult.secondFactorSetupToken) throw new Error("Error initializing test account: 'Alice'.")
+  if (!authenticationResult.secondFactorSetupToken) throw new Error("Error initializing test account: 'Bisma'.")
   await accountUseCases.setupSecondFactor({
     secondFactorSetupToken: authenticationResult.secondFactorSetupToken,
-    sharedSecret: aliceTotpSecret,
-    totp: aliceToken
+    sharedSecret: bismaTotpSecret,
+    totp: bismaToken
   })
 
-  const bob = await accountUseCases.register({ 
-    username: 'bobbers', 
-    password: 'iambob',
+  const aldeTotpSecret = "OZAAUWBQZZNSYLQA"
+  const aldeToken = authenticator.generate(aldeTotpSecret)
+  const alde = await accountUseCases.register({ 
+    username: 'aldebaran', 
+    password: 'aldebaran',
     privilegeId: 1
+  })
+  const aldeAuthenticationResult = await accountUseCases.authenticatePassword({
+    username: alde.username,
+    password: 'aldebaran'
+  })
+  if (!aldeAuthenticationResult.secondFactorSetupToken) throw new Error("Error initializing test account: 'Alde'.")
+  await accountUseCases.setupSecondFactor({
+    secondFactorSetupToken: aldeAuthenticationResult.secondFactorSetupToken,
+    sharedSecret: aldeTotpSecret,
+    totp: aldeToken
   })
 
   await accountUseCases.addClaim({
     typeId: name.id,
-    accountId: alice.id,
-    value: 'Alice Soedirman'
+    accountId: bisma.id,
+    value: 'Firdaus Bisma'
   })
   await accountUseCases.addClaim({
     typeId: department.id,
-    accountId: alice.id,
+    accountId: bisma.id,
     value: medicineOption.value
   })
   await accountUseCases.addClaim({
     typeId: age.id,
-    accountId: bob.id,
+    accountId: alde.id,
     value: 23
   })
 
-  await smartLockUseCases.create({ name: 'Test Lock #1' })
-  await smartLockUseCases.create({ name: 'Test Lock #2' })
+  await smartLockUseCases.create({ name: 'Ruang E6' })
+  const lab = await smartLockUseCases.create({ name: 'Lab Informatika' })
 }
 
 async function main() {
@@ -270,7 +283,7 @@ function authorize(request: SmartLock.Request, args: Args) {
 
   const authenticationTokenUtils = new AuthenticationTokenUtils()
 
-  await initDatabase(claimTypeUseCases, accountUseCases, smartLockUseCases)
+  await initDatabase(claimTypeUseCases, accountUseCases, smartLockUseCases, authorizationRuleUseCases)
 
   const expressApp = express()
   const httpServer = createServer(expressApp)
@@ -447,6 +460,7 @@ function authorize(request: SmartLock.Request, args: Args) {
       totp: allow,
       accounts: or(isAccountOwner, isSuperAdmin),
       inspectSelf: isAuthenticated,
+      smartLocks: isAuthenticated
     },
     Mutation: {
       "*": isSuperAdmin,
@@ -471,6 +485,7 @@ function authorize(request: SmartLock.Request, args: Args) {
     AdminPrivilegePresetWithoutAccounts: isAuthenticated,
     PasswordAuthenticationResult: allow,
     SecondFactorAuthenticationResult: allow,
+    SmartLock: isAuthenticated,
     TotpUtilities: {
       generateSecret: allow
     },

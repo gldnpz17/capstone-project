@@ -1,8 +1,60 @@
 import uasyncio
+import webrepl # type: ignore
 #from libs.microdot import Microdot, send_file
 from libs.tinyweb import webserver
 from libs.async_urequests import urequests as aurequests
 from machine import Pin
+import network
+import utime
+import gc
+
+style = """
+<style>
+    @font-face {font-family: "Inter";src: url("/public/Inter-Regular.ttf");}body {--color-main: #4f6aba;--color-main-dark: #1f3e9a;font-family: 'Inter';display: flex;flex-direction: column;margin: 0;position: relative;}#navbar {display: flex;gap: 1rem;background-color: white;height: 3rem;align-items: center;padding-left: 4rem;padding-right: 4rem;z-index: 100;filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06));}#navbar img {aspect-ratio: 1;height: 2rem;}#navbar .product-name {font-weight: bolder;margin-right: 1rem;font-size: 1.1rem;color: var(--color-main);}#navbar a {color: black !important;cursor: pointer;text-decoration: none;}#navbar a.selected {box-sizing: border-box;margin-top: 2px;border-bottom: 2px solid var(--color-main);}#content {padding: 2rem 4rem;}.flex-space {flex-grow: 1;}label {display: flex;flex-direction: column;}label input {margin-top: 0.375rem;}input {padding: 0.5rem 0.75rem;font-size: 1rem;border-radius: 0.375rem;border: 2px solid gray;}form {max-width: 24rem;display: flex;flex-direction: column;gap: 1rem;}button {border-radius: 0.375rem;transition: all 0.2s;font-size: 1rem;padding: 0.75rem;border: 0;color: white;background-color: var(--color-main);cursor: pointer;}button:hover {background-color: var(--color-main-dark);}.hidden {display: none !important;}#verification-section {display: flex;flex-direction: column;gap: 1rem;}#verify-qr {width: 14rem;}#verification-section p {width: 24rem;color: gray;}#disconnect-section {display: flex;flex-direction: column;width: 24rem;gap: 1rem;}#disconnect-section p {width: 24rem;color: gray;}#disconnect-section button {align-self: flex-start;}p {margin: 0;}#network-forms-container {display: flex;flex-direction: column;gap: 2rem;}#network-forms-container form {margin-bottom: 1rem;}
+</style>
+"""
+
+def get_navbar(activePage):
+    return  f"""
+<div id="navbar">
+    <img src="/public/capstonelogo.png" />
+    <span class="product-name">Smart Lock</span>
+    <a href="/network" class="{"selected" if activePage == "network" else ""}">Network</a>
+    <a href="/connect" class="{"selected" if activePage == "connection" else ""}">Connection</a>
+    <span class="flex-space"></span>
+    <span><b>Status : </b><span id="connection-status">N/A</span></span>
+</div>
+"""
+
+connection_status_script =  """
+<script>
+    const connectionStatusEl = document.getElementById("connection-status")
+    var updateConnectionStatus = async (force=false) => {
+        let output = null
+        while (!output) {
+            const response = await fetch("/api/connection-status", { method: "GET" })
+            const status = await response.text()
+            if (status === "true") {
+                connectionStatusEl.innerText = "Connected"
+                output = status
+            } else if (status === "false") {
+                connectionStatusEl.innerText = "Unconnected"
+                output = status
+            } else if (status === "connecting") {
+                connectionStatusEl.innerText = "Connecting"
+            }
+
+            if (force) {
+                output = status
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 500))
+        }
+        return output
+    }
+    updateConnectionStatus()
+</script>
+"""
 
 async def propose_device(serverDomainName):
     response = await aurequests.post(
@@ -85,6 +137,9 @@ async def subscribe_to_data(serverDomainName, deviceId, deviceToken, messageHand
             data = await get_message(serverDomainName, deviceId, deviceToken)  # type: ignore
             print(f"Data received : {data}") # type: ignore
             messageHandler(data)
+        except uasyncio.CancelledError:
+            print('subscribe_to_data cancelled.')
+            return
         except Exception: # type: ignore
             print('Unhandled error subscribing to server data. Retrying...')
 
@@ -93,10 +148,13 @@ async def periodically_send_ping(serverDomainName, deviceId, deviceToken):
         try:
             await send_ping(serverDomainName, deviceId, deviceToken)
             await uasyncio.sleep(5)  # type: ignore
+        except uasyncio.CancelledError:
+            print('periodically_send_ping cancelled.')
+            return
         except Exception: # type: ignore
             print('Unhandled error sending ping to the server. Retrying...')
 
-async def connect_device(serverDomainName, deviceId, verificationToken, messageHandler, connectHandler, event_loop):
+async def connect_device(serverDomainName, deviceId, verificationToken, messageHandler, connectHandler, event_loop, deviceTokenHandler):
     print('Waiting proposal verification...')
     proposalStatus = await get_proposal_status(serverDomainName, deviceId)
     print(f'Proposal status : {proposalStatus}')
@@ -104,54 +162,105 @@ async def connect_device(serverDomainName, deviceId, verificationToken, messageH
     if proposalStatus == 'true':
         deviceToken = await get_device_token(serverDomainName, verificationToken)
         print(f'Device token : {deviceToken}')
+        deviceTokenHandler(deviceToken)
         await sync_command(serverDomainName, deviceId, deviceToken, messageHandler)
         event_loop.create_task(periodically_send_ping(serverDomainName, deviceId, deviceToken))
         event_loop.create_task(subscribe_to_data(serverDomainName, deviceId, deviceToken, messageHandler))
 
 
 class ServerConnection:
-    def __init__(self, serverDomainName, messageHandler, event_loop):
+    def __init__(self, serverDomainName, messageHandler, event_loop, deviceId = None, deviceToken = None, connectionStatus = None):
         print('[ServerConnection] Creating server connection...')
         self.serverDomainName = serverDomainName
         self.messageHandler = messageHandler
         self.event_loop = event_loop
-        self.connection_status = None
+        self.connection_status = connectionStatus
+        self.deviceToken = deviceToken
+        self.deviceId = deviceId
+        self.connectionTask = None
 
     def setStatus(self, status):
         self.connection_status = status
+
+    def clone(self):
+        return ServerConnection(
+            self.serverDomainName,
+            self.messageHandler,
+            self.event_loop,
+            self.deviceId,
+            self.deviceToken,
+            self.connection_status
+        )
+
+    def start_manually(self):
+        self.event_loop.create_task(periodically_send_ping(self.serverDomainName, self.deviceId, self.deviceToken))
+        self.event_loop.create_task(subscribe_to_data(self.serverDomainName, self.deviceId, self.deviceToken, self.messageHandler))
+
+    def set_device_token(self, token):
+        self.deviceToken = token
 
     async def propose(self):
         print('[ServerConnection] Proposing device connection...')
         id, verificationToken = await propose_device(self.serverDomainName)
         self.verificationToken = verificationToken
+        self.deviceId = id
         self.connectionTask = self.event_loop.create_task(connect_device(
             self.serverDomainName,
             id,
             verificationToken,
             self.messageHandler,
             self.setStatus,
-            self.event_loop
+            self.event_loop,
+            self.set_device_token
         ))
         return id
 
-    # TODO: Fix this shit polling technique. Fucking unelegant.
-    async def get_connection_status(self):
-        print('[ServerConnection] Listening for connection status.')
-        while not self.connection_status:
-            await uasyncio.sleep(0.5)
-            print('[ServerConnection] Repolling connection status.')
-        return self.connection_status
-
-    async def destroy(self):
+    def destroy(self):
         print('[ServerConnection] Destroying server connection...')
-        self.connectionTask.cancel()
+        self.connection_status = "false"
+        if (self.connectionTask):
+            self.connectionTask.cancel()
 
-async def start_server(event_loop):
+def start_access_point():
+    print('Starting access point....')
+    accessPoint = network.WLAN(network.AP_IF)
+    accessPoint.active(True)
+    accessPoint.config(essid='SmartLockAP', authmode=network.AUTH_WPA2_PSK, password='YUyv89XbD')
+
+    utime.sleep(1)
+
+    while not accessPoint.active():
+        pass
+
+    print(f'Access point started : {accessPoint.ifconfig()}')
+    return accessPoint
+
+def start_station(ssid, password):
+    print('Starting station....')
+    station = network.WLAN(network.STA_IF)  # type: ignore
+    station.active(True)
+    station.connect(ssid, password)
+    start = utime.time()
+    while not station.isconnected():
+        now = utime.time()
+        gc.collect()
+        if now > start + 5:
+            print('Station initial connection timeout.')
+            break
+        utime.sleep(0.5)
+
+    gc.collect()
+    print(f'Station : {station.ifconfig()}')  # type: ignore
+    return station
+
+async def start_server(event_loop, accessPoint, station, stationServerMode, configure_station, configure_access_point):
     print('Starting web server...')
+    serverIpAddr = station.ifconfig()[0] if stationServerMode else accessPoint.ifconfig()[0]
+    print(f'Web server IP address : {serverIpAddr}')
 
     serverConnection = None
 
-    app = webserver(loop=event_loop)
+    app = webserver(loop=event_loop, debug=True, max_concurrency=6)
     
     @app.route('/health')
     async def healthCheck(request, response):
@@ -159,70 +268,243 @@ async def start_server(event_loop):
         await response.start_html()
         await response.send('Everything is fine.')
 
-    @app.route('/public/qrcode.js')
-    async def getQrCodeLibrary(request, response):
-        print('QR Code library requested.')
-        await response.send_file('./public/qrcode.js')
-
-    @app.route('/setup')
-    async def setupPage(request, response):
-        await response.start_html()
-        await response.send(
-            """
-            <!DOCTYPE html>
-            <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>[Setup] Smart Lock</title>
-                </head>
-                <body>
-                    <div><b>Status:</b> <span id="connection-status">N/A</span></div>
-                    <form id="connect-form">
-                        <label>Server Domain Name/IP Address
-                            <input name="serverDomain" />
-                        </label>
-                        <button type="submit">Connect</button>
-                    </form>
-                    <div><b>Device ID:</b> <span id="device-id"></span></div>
-                    <script src="/public/qrcode.js"></script>
-                    <script>
-                        const formEl = document.getElementById("connect-form")
-                        const deviceIdEl = document.getElementById("device-id")
-                        const connectionStatusEl = document.getElementById("connection-status")
-
-                        const updateConnectionStatus = async () => {
-                            const response = await fetch("/api/connection-status", { method: "GET" })
-                            const status = await response.text()
-                            if (status === "true") {
-                                connectionStatusEl.innerText = "Connected"
-                            } else {
-                                connectionStatusEl.innerText = "Unconnected"
-                            }
-                        }
-
-                        formEl.addEventListener("submit", async (e) => {
-                            try {
-                                e.preventDefault()
-                                const { serverDomain } = e.target
-                                const response = await fetch("/api/connect", {
-                                    method: "POST",
-                                    body: serverDomain.value
-                                })
-                                const deviceId = await response.text()
-                                deviceIdEl.innerText = deviceId
-                                await updateConnectionStatus()
-                            } catch(e) {
-                                console.error(e)
-                                device.IdEl.innerText = "Error!"
-                            }
-                        })
-
-                        updateConnectionStatus()
-                    </script>
-                </body>
-            </html>
-            """
+    publicAssets = ["qrcode.js", "Inter-Regular.ttf", "capstonelogo.png"]
+    index = 0
+    for index, asset in enumerate(publicAssets):
+        print(f"Registering route for public asset {asset}.")
+        exec(f"""
+@app.route(f'/public/{asset}')
+async def get_asset_{index}(request, response):
+    print(f'Public asset requested ({asset}).')
+    await response.send_file(f'./public/{asset}')
+""", 
+        { "app": app }
         )
+    
+    @app.route('/network')
+    async def networkPage(request, response):
+        print('Network page requested.')
+        global style
+        global connection_status_script
+        await response.start_html()
+        html =  """
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>[Network] Smart Lock</title>
+        %(style)s
+    </head>
+    <body>
+        %(navbar)s
+        <div id="content">
+            <div id="network-forms-container">
+                <div><b>Station Settings</b></div>
+                <form id="station-form">
+                    <label>SSID
+                        <input name="ssid" required />
+                    </label>
+                    <label>Password
+                        <input name="pass" type="password" required />
+                    </label>
+                    <button type="submit">Connect</button>
+                </form>
+
+                <div><b>Access Point Settings</b></div>
+                <form id="ap-form">
+                    <label>SSID
+                        <input name="ssid" required />
+                    </label>
+                    <label>Password
+                        <input name="pass" type="password" required />
+                    </label>
+                    <button type="submit">Set Credentials</button>
+                </form>
+            </div>
+        </div>
+        <script src="/public/qrcode.js"></script>
+        %(statusScript)s
+        <script>
+            const stationFormEl = document.getElementById("station-form")
+            const apFormEl = document.getElementById("ap-form")
+
+            stationFormEl.addEventListener("submit", async (e) => {
+                try {
+                    e.preventDefault()
+                    const { ssid, pass } = e.target
+                    const response = await fetch("/api/configure-station", {
+                        method: "POST",
+                        body: `${ssid.value},${pass.value}`
+                    })
+                    if (response.status === 200) {
+                        alert('Success')
+                    } else {
+                        console.error(response)
+                    }
+                } catch(err) {
+                    console.error(err)
+                    alert('An error has occured.')
+                }
+            })
+
+            apFormEl.addEventListener("submit", async (e) => {
+                try {
+                    e.preventDefault()
+                    const { ssid, pass } = e.target
+                    const response = await fetch("/api/configure-access-point", {
+                        method: "POST",
+                        body: `${ssid.value},${pass.value}`
+                    })
+                    if (response.status === 200) {
+                        alert('Success')
+                    } else {
+                        console.error(response)
+                    }
+                } catch(err) {
+                    console.error(err)
+                    alert('An error has occured.')
+                }
+            })
+        </script>
+    </body>
+</html>
+""" % { "style": style, "navbar": get_navbar("network"), "statusScript": connection_status_script }
+        await response.send(html)
+
+    @app.route('/connect')
+    async def connectPage(request, response):
+        gc.collect()
+        print("Connect page requested.")
+        nonlocal serverConnection
+        global style
+        global connection_status_script
+        await response.start_html()
+        html =  """
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>[Connection] Smart Lock</title>
+        %(style)s
+    </head>
+    <body>
+        %(navbar)s
+        <div id="content">
+            <form id="connect-form" class="hidden">
+                <label>Server Domain Name/IP Address
+                    <input name="serverDomain" required />
+                </label>
+                <label>Server Public Key
+                    <input type="file" />
+                </label>
+                <button type="submit">Connect</button>
+            </form>
+            <div id="verification-section" class="hidden">
+                <span><b>Device ID :</b> <span id="device-id">N/A</span></span>
+                <img id="verify-qr" />
+                <p>
+                    Scan the QR code from the smart lock settings modal 
+                    in the admin web page or enter the device ID directly.
+                </p>
+            </div>
+            <div id="disconnect-section" class="hidden">
+                <p>
+                    This device is already connected to a server.
+                </p>
+                <div><b>Server Address :</b> <span id="server-address">N/A</span></div>
+                <button id="disconnect-button">
+                    Disconnect
+                </button>
+            </div>
+        </div>
+        <script src="/public/qrcode.js"></script>
+        %(statusScript)s
+        <script>
+            const formEl = document.getElementById("connect-form")
+            const deviceIdEl = document.getElementById("device-id")
+            const qrImgEl = document.getElementById("verify-qr")
+            const disconnectButtonEl = document.getElementById("disconnect-button")
+
+            const showSection = (elementId) => {
+                const elementIds = ["connect-form", "verification-section", "disconnect-section"]
+                elementIds
+                    .filter(id => id !== elementId)
+                    .map(id => document.getElementById(id))
+                    .forEach(element => element.classList.add("hidden"))
+                document.getElementById(elementId).classList.remove("hidden")
+            }
+
+            const openDisconnectSection = async () => {
+                showSection("disconnect-section")
+                const response = await fetch("/api/server-address", { method: "GET" })
+                const serverAddress = await response.text()
+                document.getElementById("server-address").innerText = serverAddress
+            }
+
+            const openConnectSection = () => {
+                showSection("connect-form")
+                formEl.reset()
+                deviceIdEl.innerText = "N/A"
+                qrImgEl.src = ""
+            }
+
+            const showQrCode = async (content) => {
+                if (!content) return
+                const qrDataUrl = await QRCode.toDataURL(content, { width: 1024, margin: 0 })
+                qrImgEl.src = qrDataUrl
+            }
+
+            disconnectButtonEl.addEventListener("click", async (e) => {
+                await fetch("/api/disconnect", { method: "POST" })
+                updateConnectionStatus()
+                openConnectSection()
+            })
+
+            formEl.addEventListener("submit", async (e) => {
+                try {
+                    e.preventDefault()
+                    const { serverDomain } = e.target
+                    const response = await fetch("/api/connect", {
+                        method: "POST",
+                        body: serverDomain.value
+                    })
+                    const deviceId = await response.text()
+                    showSection("verification-section")
+                    deviceIdEl.innerText = deviceId
+                    showQrCode(deviceId)
+
+                    const status = await updateConnectionStatus()
+                    if (status === "true") {
+                        openDisconnectSection()
+                    } else {
+                        openConnectSection()
+                    }
+                } catch(e) {
+                    console.error(e)
+                    device.IdEl.innerText = "Error!"
+                }
+            })
+
+            const main = async () => {
+                const status = await updateConnectionStatus(true)
+                if (status === "true") {
+                    openDisconnectSection()
+                } else {
+                    openConnectSection()
+
+                    if (status === "connecting") {
+                        await fetch("/api/disconnect", { method: "POST" })
+                        await updateConnectionStatus()
+                    }
+                }
+            }
+
+            main()
+        </script>
+    </body>
+</html>
+""" % { "style": style, "navbar": get_navbar("connection"), "statusScript": connection_status_script }
+        await response.send(html)
 
     @app.route('/api/connection-status', methods=['GET'])
     async def getConnectionStatus(request, response):
@@ -232,9 +514,36 @@ async def start_server(event_loop):
             await response.send('false')
             return
 
-        status = await serverConnection.get_connection_status()
+        status = serverConnection.connection_status
+
+        if status == None:
+            await response.send('connecting')
+            return
 
         await response.send(status)
+
+    @app.route('/api/server-address', methods=['GET'])
+    async def getServerAddress(request, response):
+        print('Server address requested.')
+        nonlocal serverConnection
+        await response.start_html()
+        if not serverConnection:
+            await response.send('N/A')
+            return
+
+        await response.send(serverConnection.serverDomainName)
+
+    @app.route('/api/disconnect', methods=['POST'])
+    async def disconnectDevice(request, response):
+        print('Disconnect request received.')
+        nonlocal serverConnection
+        
+        if serverConnection:
+            serverConnection.destroy()
+            serverConnection = None
+
+        await response.start_html()
+        await response.send('Success')
 
     relay = Pin(14, Pin.OUT)
     led_green = Pin(27, Pin.OUT)
@@ -270,13 +579,111 @@ async def start_server(event_loop):
         await response.start_html()
         await response.send(id)
 
-    app.run(host='0.0.0.0', port=8081)
+    @app.route('/api/configure-station', methods=['POST'], save_headers=['Content-Length'])
+    async def configureStation(request, response):
+        print('Received station configuration request.')
+        content = await request.read_data()
+        [ssid, password] = content.split(',')
+        print(f'Attempting to connect the station to {ssid}:{password}.')
+        nonlocal serverConnection
+        nonlocal station
+
+        configure_station(station, ssid, password)
+
+        if serverConnection:
+            oldServerConnection = serverConnection
+            newServerConnection = oldServerConnection.clone()
+            oldServerConnection.destroy()
+            newServerConnection.start_manually()
+            serverConnection = newServerConnection
+
+        await response.start_html()
+        await response.send('Success')
+
+    @app.route('/api/configure-access-point', methods=['POST'], save_headers=['Content-Length'])
+    async def configureAccessPoint(request, response):
+        print('Received access point configuration request.')
+        
+        content = await request.read_data()
+        [ssid, password] = content.split(',')
+        print(f'Attempting to change the access point configuration to {ssid}:{password}.')
+
+        nonlocal accessPoint
+
+        configure_access_point(accessPoint, ssid, password)
+
+        await response.start_html()
+        await response.send('Success')
+
+
+    app.run(host=serverIpAddr, port=8081)
     print("Web server started.")
 
+async def start_webrepl():
+    print('Starting webrepl...')
+    webrepl.start()
+
 def main():
+    DEVELOPMENT_MODE = False
+    STATION_SERVER_MODE = True
+    STATION_TIMEOUT = 5
+    
     event_loop = uasyncio.get_event_loop()
-    # event_loop.create_task(connect(event_loop)) # type: ignore
-    event_loop.create_task(start_server(event_loop))
+    station = start_station('gldnpz', 'sapigemuk55555')
+    accessPoint = start_access_point()
+
+    def configure_station(station, ssid, password):
+        print(f'Connecting to another wifi network. {ssid}:{password}')
+        nonlocal STATION_TIMEOUT
+        station.disconnect()
+        start = utime.time()
+        while station.isconnected():
+            gc.collect()
+            now = utime.time()
+            if now > start + STATION_TIMEOUT:
+                print('Station disconnect timeout.')
+                return
+            utime.sleep(0.5)
+
+        station.connect(ssid, password)
+        start = utime.time()
+        while not station.isconnected():
+            gc.collect()
+            now = utime.time()
+            if now > start + STATION_TIMEOUT:
+                print('Station connect timeout.')
+                return
+            utime.sleep(0.5)
+
+        gc.collect()
+        print(f'Station : {station.ifconfig()}')  # type: ignore
+
+    def configure_access_point(accessPoint, ssid, password):
+        try:
+            print(f'Changing access point credentials. {ssid}:{password}')
+            accessPoint.config(essid=ssid, authmode=network.AUTH_WPA2_PSK, password=password)
+
+            utime.sleep(1)
+
+            while not accessPoint.active():
+                pass
+
+            print(f'Access point started : {accessPoint.ifconfig()}')
+        except Exception: # type: ignore
+            print('Something wrong happened when configuring the AP. Resetting...')
+            accessPoint.config(essid='SmartLockAP', authmode=network.AUTH_WPA2_PSK, password='YUyv89XbD')
+
+    event_loop.create_task(start_server(
+        event_loop,
+        accessPoint, station,
+        STATION_SERVER_MODE, 
+        configure_station,
+        configure_access_point
+    ))
+
+    if DEVELOPMENT_MODE:
+        event_loop.create_task(start_webrepl())
+    
     print("Starting event loop.")
     event_loop.run_forever()
 

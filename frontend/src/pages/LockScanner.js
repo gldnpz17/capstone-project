@@ -94,6 +94,7 @@ const LockScannerPage = () => {
       setSmartLockId(null)
     } catch (err) {
       alert("An error has occured")
+      alert(err)
       setSmartLockId(null)
       return
     }

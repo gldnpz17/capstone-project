@@ -119,7 +119,6 @@ class request:
         print(f"size: {size}")
         if size > self.params['max_body_size'] or size < 0:
             raise HTTPException(413)
-        print('aaaaa')
         data = await self.reader.readexactly(size)
         return data.decode('utf-8')
 
