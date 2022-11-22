@@ -1,12 +1,11 @@
+import gc
 import uasyncio
 import webrepl # type: ignore
+from machine import Pin
 #from libs.microdot import Microdot, send_file
 from libs.tinyweb import webserver
-from libs.async_urequests import urequests as aurequests
-from machine import Pin
-import network
-import utime
-import gc
+from server_connection import ServerConnection, Proposal
+from esp_network import EspStation, EspAccessPoint
 
 style = """
 <style>
@@ -34,19 +33,12 @@ connection_status_script =  """
         while (!output) {
             const response = await fetch("/api/connection-status", { method: "GET" })
             const status = await response.text()
-            if (status === "true") {
-                connectionStatusEl.innerText = "Connected"
+            if (status) {
                 output = status
-            } else if (status === "false") {
-                connectionStatusEl.innerText = "Unconnected"
-                output = status
-            } else if (status === "connecting") {
-                connectionStatusEl.innerText = "Connecting"
+                connectionStatusEl.innerText = status
             }
 
-            if (force) {
-                output = status
-            }
+            if (force) output = status
 
             await new Promise(resolve => setTimeout(resolve, 500))
         }
@@ -56,214 +48,15 @@ connection_status_script =  """
 </script>
 """
 
-async def propose_device(serverDomainName):
-    response = await aurequests.post(
-        f'http://{serverDomainName}/devices/propose',
-        headers={ 'Content-Type': 'application/json' },
-        data=f'{{ "macAddress": "0C:B8:15:F3:F7:B4" }}'
-    )
-
-    result = response.json
-    id = result["id"]
-    verificationToken = result["verificationToken"]
-    print(f'Device proposed. ID: {result["id"]}')
-
-    return id, verificationToken
-
-async def get_proposal_status(serverDomainName, deviceId):
-    response = None
-    while not response:
-        try:
-            response = await aurequests.get(f'http://{serverDomainName}/devices/{deviceId}/proposal-status')
-        except aurequests.TimeoutError: # type: ignore
-            print("get_proposal_status timed out. retrying...")
-        
-    return response.text
-
-async def get_device_token(serverDomainName, verificationToken):
-    response = await aurequests.post(
-        f'http://{serverDomainName}/auth/get-device-token',
-        headers={ 'Content-Type': 'application/json' },
-        data=f'{{ "verificationToken": "{verificationToken}" }}'
-    )
-
-    return response.text
-
-async def get_message(serverDomainName, deviceId, deviceToken):
-    response = None
-    while not response:
-        try:
-            response = await aurequests.get('http://' + serverDomainName + '/devices/' + deviceId + '/messages/subscribe', headers={ 'authorization': 'Bearer ' + deviceToken })
-        except aurequests.TimeoutError: # type: ignore
-            print("get_message timed out. retrying...")
-
-    if response.status_code == 502:
-        raise Exception()  # type: ignore
-    elif response.status_code == 200:
-        return response.text
-    else:
-        print('(Subscribe) An error has occured.')  # type: ignore
-        print(response)  # type: ignore
-
-async def send_ping(serverDomainName, deviceId, deviceToken):
-    response = None
-    while not response:
-        try:
-            response = await aurequests.post(
-                f'http://{serverDomainName}/devices/{deviceId}/ping',
-                headers={ 'authorization': f'Bearer {deviceToken}'}
-            )
-        except aurequests.TimeoutError: # type: ignore
-            print("send_ping timed out. retrying...")
-
-    if response.status_code == 200:
-        print('Ping successful.')  # type: ignore
-    else:
-        print('(Ping) An error has occured.')  # type: ignore
-        print(response)  # type: ignore
-
-async def sync_command(serverDomainName, deviceId, deviceToken, messageHandler):
-    response = await aurequests.get(
-        f'http://{serverDomainName}/devices/{deviceId}/sync-command',
-        headers={ 'authorization': f'Bearer {deviceToken}'}
-    )
-
-    print(f"Synced command : {response.text}")
-    messageHandler(response.text)
-
-async def subscribe_to_data(serverDomainName, deviceId, deviceToken, messageHandler):
-    while True:
-        try:
-            data = await get_message(serverDomainName, deviceId, deviceToken)  # type: ignore
-            print(f"Data received : {data}") # type: ignore
-            messageHandler(data)
-        except uasyncio.CancelledError:
-            print('subscribe_to_data cancelled.')
-            return
-        except Exception: # type: ignore
-            print('Unhandled error subscribing to server data. Retrying...')
-
-async def periodically_send_ping(serverDomainName, deviceId, deviceToken):
-    while True:
-        try:
-            await send_ping(serverDomainName, deviceId, deviceToken)
-            await uasyncio.sleep(5)  # type: ignore
-        except uasyncio.CancelledError:
-            print('periodically_send_ping cancelled.')
-            return
-        except Exception: # type: ignore
-            print('Unhandled error sending ping to the server. Retrying...')
-
-async def connect_device(serverDomainName, deviceId, verificationToken, messageHandler, connectHandler, event_loop, deviceTokenHandler):
-    print('Waiting proposal verification...')
-    proposalStatus = await get_proposal_status(serverDomainName, deviceId)
-    print(f'Proposal status : {proposalStatus}')
-    connectHandler(proposalStatus)
-    if proposalStatus == 'true':
-        deviceToken = await get_device_token(serverDomainName, verificationToken)
-        print(f'Device token : {deviceToken}')
-        deviceTokenHandler(deviceToken)
-        await sync_command(serverDomainName, deviceId, deviceToken, messageHandler)
-        event_loop.create_task(periodically_send_ping(serverDomainName, deviceId, deviceToken))
-        event_loop.create_task(subscribe_to_data(serverDomainName, deviceId, deviceToken, messageHandler))
-
-
-class ServerConnection:
-    def __init__(self, serverDomainName, messageHandler, event_loop, deviceId = None, deviceToken = None, connectionStatus = None):
-        print('[ServerConnection] Creating server connection...')
-        self.serverDomainName = serverDomainName
-        self.messageHandler = messageHandler
-        self.event_loop = event_loop
-        self.connection_status = connectionStatus
-        self.deviceToken = deviceToken
-        self.deviceId = deviceId
-        self.connectionTask = None
-
-    def setStatus(self, status):
-        self.connection_status = status
-
-    def clone(self):
-        return ServerConnection(
-            self.serverDomainName,
-            self.messageHandler,
-            self.event_loop,
-            self.deviceId,
-            self.deviceToken,
-            self.connection_status
-        )
-
-    def start_manually(self):
-        self.event_loop.create_task(periodically_send_ping(self.serverDomainName, self.deviceId, self.deviceToken))
-        self.event_loop.create_task(subscribe_to_data(self.serverDomainName, self.deviceId, self.deviceToken, self.messageHandler))
-
-    def set_device_token(self, token):
-        self.deviceToken = token
-
-    async def propose(self):
-        print('[ServerConnection] Proposing device connection...')
-        id, verificationToken = await propose_device(self.serverDomainName)
-        self.verificationToken = verificationToken
-        self.deviceId = id
-        self.connectionTask = self.event_loop.create_task(connect_device(
-            self.serverDomainName,
-            id,
-            verificationToken,
-            self.messageHandler,
-            self.setStatus,
-            self.event_loop,
-            self.set_device_token
-        ))
-        return id
-
-    def destroy(self):
-        print('[ServerConnection] Destroying server connection...')
-        self.connection_status = "false"
-        if (self.connectionTask):
-            self.connectionTask.cancel()
-
-def start_access_point():
-    print('Starting access point....')
-    accessPoint = network.WLAN(network.AP_IF)
-    accessPoint.active(True)
-    accessPoint.config(essid='SmartLockAP', authmode=network.AUTH_WPA2_PSK, password='YUyv89XbD')
-
-    utime.sleep(1)
-
-    while not accessPoint.active():
-        pass
-
-    print(f'Access point started : {accessPoint.ifconfig()}')
-    return accessPoint
-
-def start_station(ssid, password):
-    print('Starting station....')
-    station = network.WLAN(network.STA_IF)  # type: ignore
-    station.active(True)
-    station.connect(ssid, password)
-    start = utime.time()
-    while not station.isconnected():
-        now = utime.time()
-        gc.collect()
-        if now > start + 5:
-            print('Station initial connection timeout.')
-            break
-        utime.sleep(0.5)
-
-    gc.collect()
-    print(f'Station : {station.ifconfig()}')  # type: ignore
-    return station
-
-async def start_server(event_loop, accessPoint, station, stationServerMode, configure_station, configure_access_point):
+async def start_server(event_loop, espAccessPoint: EspAccessPoint, espStation: EspStation, stationServerMode):
     print('Starting web server...')
-    serverIpAddr = station.ifconfig()[0] if stationServerMode else accessPoint.ifconfig()[0]
+    serverIpAddr = espStation.station.ifconfig()[0] if stationServerMode else espAccessPoint.accessPoint.ifconfig()[0]
     print(f'Web server IP address : {serverIpAddr}')
 
-    serverConnection = None
-
     app = webserver(loop=event_loop, debug=True, max_concurrency=6)
-    
+
     @app.route('/health')
-    async def healthCheck(request, response):
+    async def healthCheck(_, response):
         print('Health check requested')
         await response.start_html()
         await response.send('Everything is fine.')
@@ -277,12 +70,16 @@ async def start_server(event_loop, accessPoint, station, stationServerMode, conf
 async def get_asset_{index}(request, response):
     print(f'Public asset requested ({asset}).')
     await response.send_file(f'./public/{asset}')
-""", 
+""",
         { "app": app }
         )
-    
+
+    @app.route('/')
+    async def redirectToNetwork(_, response):
+        await response.redirect('/network')
+
     @app.route('/network')
-    async def networkPage(request, response):
+    async def networkPage(_, response):
         print('Network page requested.')
         global style
         global connection_status_script
@@ -338,6 +135,7 @@ async def get_asset_{index}(request, response):
                     })
                     if (response.status === 200) {
                         alert('Success')
+                        e.target.reset()
                     } else {
                         console.error(response)
                     }
@@ -357,6 +155,7 @@ async def get_asset_{index}(request, response):
                     })
                     if (response.status === 200) {
                         alert('Success')
+                        e.target.reset()
                     } else {
                         console.error(response)
                     }
@@ -372,7 +171,7 @@ async def get_asset_{index}(request, response):
         await response.send(html)
 
     @app.route('/connect')
-    async def connectPage(request, response):
+    async def connectPage(_, response):
         gc.collect()
         print("Connect page requested.")
         nonlocal serverConnection
@@ -469,12 +268,26 @@ async def get_asset_{index}(request, response):
                         body: serverDomain.value
                     })
                     const deviceId = await response.text()
+
+                    if (deviceId === "nodevice") {
+                        alert("Error sending device proposal to the server.")
+                        return
+                    }
+
                     showSection("verification-section")
                     deviceIdEl.innerText = deviceId
                     showQrCode(deviceId)
 
-                    const status = await updateConnectionStatus()
-                    if (status === "true") {
+                    let status = "Configuring"
+                    let tries = 0
+                    const MAX_STATUS_RETRIES = 600
+                    while (status === "Configuring") {
+                        if (tries > MAX_STATUS_RETRIES) break
+                        tries++
+                        status = await updateConnectionStatus()
+                        await new Promise(resolve => setTimeout(resolve, 500))
+                    }
+                    if (status === "Connected") {
                         openDisconnectSection()
                     } else {
                         openConnectSection()
@@ -487,12 +300,11 @@ async def get_asset_{index}(request, response):
 
             const main = async () => {
                 const status = await updateConnectionStatus(true)
-                if (status === "true") {
+                if (status === "Connected" || status === "Disconnected") {
                     openDisconnectSection()
                 } else {
                     openConnectSection()
-
-                    if (status === "connecting") {
+                    if (status === "Connecting") {
                         await fetch("/api/disconnect", { method: "POST" })
                         await updateConnectionStatus()
                     }
@@ -506,24 +318,27 @@ async def get_asset_{index}(request, response):
 """ % { "style": style, "navbar": get_navbar("connection"), "statusScript": connection_status_script }
         await response.send(html)
 
+    proposal: Proposal = None
+    serverConnection: ServerConnection = None
+
     @app.route('/api/connection-status', methods=['GET'])
-    async def getConnectionStatus(request, response):
+    async def getConnectionStatus(_, response):
         print('Connection status requested.')
+        nonlocal proposal
+
         await response.start_html()
+        if proposal:
+            await response.send('Configuring')
+            return
+
         if not serverConnection:
-            await response.send('false')
+            await response.send('Unconnected')
             return
 
-        status = serverConnection.connection_status
-
-        if status == None:
-            await response.send('connecting')
-            return
-
-        await response.send(status)
+        await response.send(serverConnection.connectionStatus)
 
     @app.route('/api/server-address', methods=['GET'])
-    async def getServerAddress(request, response):
+    async def getServerAddress(_, response):
         print('Server address requested.')
         nonlocal serverConnection
         await response.start_html()
@@ -531,12 +346,16 @@ async def get_asset_{index}(request, response):
             await response.send('N/A')
             return
 
-        await response.send(serverConnection.serverDomainName)
+        await response.send(serverConnection.proposal.serverDomainName)
 
     @app.route('/api/disconnect', methods=['POST'])
-    async def disconnectDevice(request, response):
+    async def disconnectDevice(_, response):
         print('Disconnect request received.')
         nonlocal serverConnection
+        nonlocal espStation
+
+        if not espStation.check_connection():
+            raise Exception('Station not connected.')
         
         if serverConnection:
             serverConnection.destroy()
@@ -565,19 +384,51 @@ async def get_asset_{index}(request, response):
         print('Received connect request.')
         serverDomainName = await request.read_data()
         print(f'Attempting to connect to {serverDomainName}.')
+
+        nonlocal proposal
         nonlocal serverConnection
         nonlocal handleMessage
+        nonlocal espStation
+
+        if not espStation.check_connection():
+            raise Exception('Station not connected.')
+
+        if proposal:
+            proposal.cancel()
+            proposal = None
+
         if serverConnection:
             serverConnection.destroy()
-        serverConnection = ServerConnection(
-            serverDomainName,
-            handleMessage, 
-            event_loop
-        )
-        id = await serverConnection.propose()
-        print(f'Sending back device id : {id}')
+            serverConnection = None
+
+        def handleAccepted(acceptedProposal: Proposal):
+            print('Proposal acceptance callback fired.')
+            nonlocal serverConnection
+            nonlocal handleMessage
+            nonlocal proposal
+            nonlocal espStation
+
+            proposal = None
+            serverConnection = ServerConnection(acceptedProposal, handleMessage)
+            serverConnection.start()
+            espStation.onReconnect = lambda _ : serverConnection.start()
+            espStation.onDisconnect = lambda _ : serverConnection.stop()
+
+        def handleRejected():
+            print('Proposal rejection callback fired.')
+            nonlocal proposal
+            proposal = None
+
+        proposal = Proposal(serverDomainName, None, event_loop, espStation, handleAccepted, handleRejected)
+
+        deviceID = await proposal.propose()
+        print(f'Sending back device id : {deviceID}')
+
+        if deviceID is None:
+            deviceID = 'nodevice'
+
         await response.start_html()
-        await response.send(id)
+        await response.send(deviceID)
 
     @app.route('/api/configure-station', methods=['POST'], save_headers=['Content-Length'])
     async def configureStation(request, response):
@@ -585,17 +436,11 @@ async def get_asset_{index}(request, response):
         content = await request.read_data()
         [ssid, password] = content.split(',')
         print(f'Attempting to connect the station to {ssid}:{password}.')
+
         nonlocal serverConnection
-        nonlocal station
+        nonlocal espStation
 
-        configure_station(station, ssid, password)
-
-        if serverConnection:
-            oldServerConnection = serverConnection
-            newServerConnection = oldServerConnection.clone()
-            oldServerConnection.destroy()
-            newServerConnection.start_manually()
-            serverConnection = newServerConnection
+        espStation.connect(ssid, password)
 
         await response.start_html()
         await response.send('Success')
@@ -608,13 +453,12 @@ async def get_asset_{index}(request, response):
         [ssid, password] = content.split(',')
         print(f'Attempting to change the access point configuration to {ssid}:{password}.')
 
-        nonlocal accessPoint
+        nonlocal espAccessPoint
 
-        configure_access_point(accessPoint, ssid, password)
+        espAccessPoint.start(ssid, password)
 
         await response.start_html()
         await response.send('Success')
-
 
     app.run(host=serverIpAddr, port=8081)
     print("Web server started.")
@@ -623,69 +467,28 @@ async def start_webrepl():
     print('Starting webrepl...')
     webrepl.start()
 
-def main():
+async def main(event_loop):
     DEVELOPMENT_MODE = False
     STATION_SERVER_MODE = True
-    STATION_TIMEOUT = 5
-    
-    event_loop = uasyncio.get_event_loop()
-    station = start_station('gldnpz', 'sapigemuk55555')
-    accessPoint = start_access_point()
 
-    def configure_station(station, ssid, password):
-        print(f'Connecting to another wifi network. {ssid}:{password}')
-        nonlocal STATION_TIMEOUT
-        station.disconnect()
-        start = utime.time()
-        while station.isconnected():
-            gc.collect()
-            now = utime.time()
-            if now > start + STATION_TIMEOUT:
-                print('Station disconnect timeout.')
-                return
-            utime.sleep(0.5)
+    station = EspStation()
+    if STATION_SERVER_MODE:
+        await station.connect('gldnpz', 'sapigemuk55555')
 
-        station.connect(ssid, password)
-        start = utime.time()
-        while not station.isconnected():
-            gc.collect()
-            now = utime.time()
-            if now > start + STATION_TIMEOUT:
-                print('Station connect timeout.')
-                return
-            utime.sleep(0.5)
+    accessPoint = EspAccessPoint()
+    await accessPoint.start()
 
-        gc.collect()
-        print(f'Station : {station.ifconfig()}')  # type: ignore
-
-    def configure_access_point(accessPoint, ssid, password):
-        try:
-            print(f'Changing access point credentials. {ssid}:{password}')
-            accessPoint.config(essid=ssid, authmode=network.AUTH_WPA2_PSK, password=password)
-
-            utime.sleep(1)
-
-            while not accessPoint.active():
-                pass
-
-            print(f'Access point started : {accessPoint.ifconfig()}')
-        except Exception: # type: ignore
-            print('Something wrong happened when configuring the AP. Resetting...')
-            accessPoint.config(essid='SmartLockAP', authmode=network.AUTH_WPA2_PSK, password='YUyv89XbD')
-
-    event_loop.create_task(start_server(
-        event_loop,
-        accessPoint, station,
-        STATION_SERVER_MODE, 
-        configure_station,
-        configure_access_point
-    ))
+    event_loop.create_task(start_server(event_loop, accessPoint, station, STATION_SERVER_MODE))
 
     if DEVELOPMENT_MODE:
         event_loop.create_task(start_webrepl())
-    
+
+def async_root():
+    print("Starting program.")
+    event_loop = uasyncio.get_event_loop()
+    event_loop.create_task(main(event_loop))
     print("Starting event loop.")
     event_loop.run_forever()
 
 print('main.py loaded.')
-main()
+async_root()

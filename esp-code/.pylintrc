@@ -18,5 +18,5 @@ confidence=
 # --disable=W".
 
 disable = missing-docstring, line-too-long, trailing-newlines, broad-except, logging-format-interpolation, invalid-name, empty-docstring,
-        no-method-argument, assignment-from-no-return, too-many-function-args, unexpected-keyword-arg, no-member, import-error
+        no-method-argument, assignment-from-no-return, too-many-function-args, unexpected-keyword-arg, no-member, import-error, exec-used
         # the 2nd  line deals with the limited information in the generated stubs.

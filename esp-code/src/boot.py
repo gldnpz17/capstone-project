@@ -1,6 +1,4 @@
 import gc
-import network
-import ubinascii
 
 gc.collect()
 
@@ -14,7 +12,7 @@ gc.collect()
 #     webrepl.start()
 #     print("webrepl enabled.")
 
-print('Program started.')  # type: ignore
+print('Boot started.')  # type: ignore
 
 # mac_addr = station.config('mac')
 # print(f'Mac address : {ubinascii.hexlify(mac_addr).decode()}')
