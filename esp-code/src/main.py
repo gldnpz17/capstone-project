@@ -9,42 +9,40 @@ from esp_network import EspStation, EspAccessPoint
 
 style = """
 <style>
-    @font-face {font-family: "Inter";src: url("/public/Inter-Regular.ttf");}body {--color-main: #4f6aba;--color-main-dark: #1f3e9a;font-family: 'Inter';display: flex;flex-direction: column;margin: 0;position: relative;}#navbar {display: flex;gap: 1rem;background-color: white;height: 3rem;align-items: center;padding-left: 4rem;padding-right: 4rem;z-index: 100;filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06));}#navbar img {aspect-ratio: 1;height: 2rem;}#navbar .product-name {font-weight: bolder;margin-right: 1rem;font-size: 1.1rem;color: var(--color-main);}#navbar a {color: black !important;cursor: pointer;text-decoration: none;}#navbar a.selected {box-sizing: border-box;margin-top: 2px;border-bottom: 2px solid var(--color-main);}#content {padding: 2rem 4rem;}.flex-space {flex-grow: 1;}label {display: flex;flex-direction: column;}label input {margin-top: 0.375rem;}input {padding: 0.5rem 0.75rem;font-size: 1rem;border-radius: 0.375rem;border: 2px solid gray;}form {max-width: 24rem;display: flex;flex-direction: column;gap: 1rem;}button {border-radius: 0.375rem;transition: all 0.2s;font-size: 1rem;padding: 0.75rem;border: 0;color: white;background-color: var(--color-main);cursor: pointer;}button:hover {background-color: var(--color-main-dark);}.hidden {display: none !important;}#verification-section {display: flex;flex-direction: column;gap: 1rem;}#verify-qr {width: 14rem;}#verification-section p {width: 24rem;color: gray;}#disconnect-section {display: flex;flex-direction: column;width: 24rem;gap: 1rem;}#disconnect-section p {width: 24rem;color: gray;}#disconnect-section button {align-self: flex-start;}p {margin: 0;}#network-forms-container {display: flex;flex-direction: column;gap: 2rem;}#network-forms-container form {margin-bottom: 1rem;}
+    @font-face {font-family: "Inter";src: url("/public/Inter-Regular.ttf");}body {--color-main: #4f6aba;--color-main-dark: #1f3e9a;font-family: 'Inter';display: flex;flex-direction: column;margin: 0;position: relative;}#navbar {display: flex;gap: 1rem;background-color: white;height: 3rem;align-items: center;padding-left: 4rem;padding-right: 4rem;z-index: 100;filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06));}#navbar img {aspect-ratio: 1;height: 2rem;}#navbar .product-name {font-weight: bolder;margin-right: 1rem;font-size: 1.1rem;color: var(--color-main);}#navbar a {color: black !important;cursor: pointer;text-decoration: none;}#navbar a.selected {box-sizing: border-box;margin-top: 2px;border-bottom: 2px solid var(--color-main);}#content {padding: 2rem 4rem;}.flex-space {flex-grow: 1;}label {display: flex;flex-direction: column;}label input textarea {margin-top: 0.375rem;}input textarea {padding: 0.5rem 0.75rem;font-size: 1rem;border-radius: 0.375rem;border: 2px solid gray;}form {max-width: 24rem;display: flex;flex-direction: column;gap: 1rem;}button {border-radius: 0.375rem;transition: all 0.2s;font-size: 1rem;padding: 0.75rem;border: 0;color: white;background-color: var(--color-main);cursor: pointer;}button:hover {background-color: var(--color-main-dark);}.hidden {display: none !important;}#verification-section {display: flex;flex-direction: column;gap: 1rem;}#verify-qr {width: 14rem;}#verification-section p {width: 24rem;color: gray;}#disconnect-section {display: flex;flex-direction: column;width: 24rem;gap: 1rem;}#disconnect-section p {width: 24rem;color: gray;}#disconnect-section button {align-self: flex-start;}p {margin: 0;}#network-forms-container {display: flex;flex-direction: column;gap: 2rem;}#network-forms-container form {margin-bottom: 1rem;}
 </style>
 """
 
 def get_navbar(activePage):
     return  f"""
 <div id="navbar">
-    <img src="/public/capstonelogo.png" />
-    <span class="product-name">Smart Lock</span>
-    <a href="/network" class="{"selected" if activePage == "network" else ""}">Network</a>
-    <a href="/connect" class="{"selected" if activePage == "connection" else ""}">Connection</a>
-    <span class="flex-space"></span>
-    <span><b>Status : </b><span id="connection-status">N/A</span></span>
+  <img src="/public/capstonelogo.png" />
+  <span class="product-name">Smart Lock</span>
+  <a href="/network" class="{"selected" if activePage == "network" else ""}">Network</a>
+  <a href="/connect" class="{"selected" if activePage == "connection" else ""}">Connection</a>
+  <span class="flex-space"></span>
+  <span><b>Status : </b><span id="connection-status">N/A</span></span>
 </div>
 """
 
 connection_status_script =  """
 <script>
-    const connectionStatusEl = document.getElementById("connection-status")
-    var updateConnectionStatus = async (force=false) => {
-        let output = null
-        while (!output) {
-            const response = await fetch("/api/connection-status", { method: "GET" })
-            const status = await response.text()
-            if (status) {
-                output = status
-                connectionStatusEl.innerText = status
-            }
-
-            if (force) output = status
-
-            await new Promise(resolve => setTimeout(resolve, 500))
-        }
-        return output
+  const connectionStatusEl = document.getElementById("connection-status")
+  var updateConnectionStatus = async (force=false) => {
+    let output = null
+    while (!output) {
+      const response = await fetch("/api/connection-status", { method: "GET" })
+      const status = await response.text()
+      if (status) {
+        output = status
+        connectionStatusEl.innerText = status
+      }
+      if (force) output = status
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
-    updateConnectionStatus()
+    return output
+  }
+  updateConnectionStatus()
 </script>
 """
 
@@ -181,139 +179,139 @@ async def get_asset_{index}(request, response):
         html =  """
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>[Connection] Smart Lock</title>
-        %(style)s
-    </head>
-    <body>
-        %(navbar)s
-        <div id="content">
-            <form id="connect-form" class="hidden">
-                <label>Server Domain Name/IP Address
-                    <input name="serverDomain" required />
-                </label>
-                <label>Server Public Key
-                    <input type="file" />
-                </label>
-                <button type="submit">Connect</button>
-            </form>
-            <div id="verification-section" class="hidden">
-                <span><b>Device ID :</b> <span id="device-id">N/A</span></span>
-                <img id="verify-qr" />
-                <p>
-                    Scan the QR code from the smart lock settings modal 
-                    in the admin web page or enter the device ID directly.
-                </p>
-            </div>
-            <div id="disconnect-section" class="hidden">
-                <p>
-                    This device is already connected to a server.
-                </p>
-                <div><b>Server Address :</b> <span id="server-address">N/A</span></div>
-                <button id="disconnect-button">
-                    Disconnect
-                </button>
-            </div>
+  <head>
+    <meta charset="UTF-8">
+    <title>[Connection] Smart Lock</title>
+    %(style)s
+  </head>
+  <body>
+      %(navbar)s
+      <div id="content">
+        <form id="connect-form" class="hidden">
+          <label>Server Domain Name/IP Address
+            <input name="serverDomain" required />
+          </label>
+          <label>Server Public Key Certificate
+            <textarea name="cert" rows="10"></textarea>
+          </label>
+          <button type="submit">Connect</button>
+        </form>
+        <div id="verification-section" class="hidden">
+          <span><b>Device ID :</b> <span id="device-id">N/A</span></span>
+          <img id="verify-qr" />
+          <p>
+            Scan the QR code from the smart lock settings modal 
+            in the admin web page or enter the device ID directly.
+          </p>
         </div>
-        <script src="/public/qrcode.js"></script>
-        %(statusScript)s
-        <script>
-            const formEl = document.getElementById("connect-form")
-            const deviceIdEl = document.getElementById("device-id")
-            const qrImgEl = document.getElementById("verify-qr")
-            const disconnectButtonEl = document.getElementById("disconnect-button")
+        <div id="disconnect-section" class="hidden">
+          <p>
+            This device is already connected to a server.
+          </p>
+          <div><b>Server Address :</b> <span id="server-address">N/A</span></div>
+          <button id="disconnect-button">
+            Disconnect
+          </button>
+        </div>
+      </div>
+      <script src="/public/qrcode.js"></script>
+      %(statusScript)s
+      <script>
+        const formEl = document.getElementById("connect-form")
+        const deviceIdEl = document.getElementById("device-id")
+        const qrImgEl = document.getElementById("verify-qr")
+        const disconnectButtonEl = document.getElementById("disconnect-button")
 
-            const showSection = (elementId) => {
-                const elementIds = ["connect-form", "verification-section", "disconnect-section"]
-                elementIds
-                    .filter(id => id !== elementId)
-                    .map(id => document.getElementById(id))
-                    .forEach(element => element.classList.add("hidden"))
-                document.getElementById(elementId).classList.remove("hidden")
-            }
+        const showSection = (elementId) => {
+          const elementIds = ["connect-form", "verification-section", "disconnect-section"]
+          elementIds
+            .filter(id => id !== elementId)
+            .map(id => document.getElementById(id))
+            .forEach(element => element.classList.add("hidden"))
+          document.getElementById(elementId).classList.remove("hidden")
+        }
 
-            const openDisconnectSection = async () => {
-                showSection("disconnect-section")
-                const response = await fetch("/api/server-address", { method: "GET" })
-                const serverAddress = await response.text()
-                document.getElementById("server-address").innerText = serverAddress
-            }
+        const openDisconnectSection = async () => {
+          showSection("disconnect-section")
+          const response = await fetch("/api/server-address", { method: "GET" })
+          const serverAddress = await response.text()
+          document.getElementById("server-address").innerText = serverAddress
+        }
 
-            const openConnectSection = () => {
-                showSection("connect-form")
-                formEl.reset()
-                deviceIdEl.innerText = "N/A"
-                qrImgEl.src = ""
-            }
+        const openConnectSection = () => {
+          showSection("connect-form")
+          formEl.reset()
+          deviceIdEl.innerText = "N/A"
+          qrImgEl.src = ""
+        }
 
-            const showQrCode = async (content) => {
-                if (!content) return
-                const qrDataUrl = await QRCode.toDataURL(content, { width: 1024, margin: 0 })
-                qrImgEl.src = qrDataUrl
-            }
+        const showQrCode = async (content) => {
+          if (!content) return
+          const qrDataUrl = await QRCode.toDataURL(content, { width: 1024, margin: 0 })
+          qrImgEl.src = qrDataUrl
+        }
 
-            disconnectButtonEl.addEventListener("click", async (e) => {
-                await fetch("/api/disconnect", { method: "POST" })
-                updateConnectionStatus()
-                openConnectSection()
+        disconnectButtonEl.addEventListener("click", async (e) => {
+          await fetch("/api/disconnect", { method: "POST" })
+          updateConnectionStatus()
+          openConnectSection()
+        })
+
+        formEl.addEventListener("submit", async (e) => {
+          try {
+            e.preventDefault()
+            const { serverDomain, cert } = e.target
+            const response = await fetch("/api/connect", {
+                method: "POST",
+                body: `${serverDomain.value}_${cert.value}`
             })
+            const deviceId = await response.text()
 
-            formEl.addEventListener("submit", async (e) => {
-                try {
-                    e.preventDefault()
-                    const { serverDomain } = e.target
-                    const response = await fetch("/api/connect", {
-                        method: "POST",
-                        body: serverDomain.value
-                    })
-                    const deviceId = await response.text()
-
-                    if (deviceId === "nodevice") {
-                        alert("Error sending device proposal to the server.")
-                        return
-                    }
-
-                    showSection("verification-section")
-                    deviceIdEl.innerText = deviceId
-                    showQrCode(deviceId)
-
-                    let status = "Configuring"
-                    let tries = 0
-                    const MAX_STATUS_RETRIES = 600
-                    while (status === "Configuring") {
-                        if (tries > MAX_STATUS_RETRIES) break
-                        tries++
-                        status = await updateConnectionStatus()
-                        await new Promise(resolve => setTimeout(resolve, 500))
-                    }
-                    if (status === "Connected") {
-                        openDisconnectSection()
-                    } else {
-                        openConnectSection()
-                    }
-                } catch(e) {
-                    console.error(e)
-                    device.IdEl.innerText = "Error!"
-                }
-            })
-
-            const main = async () => {
-                const status = await updateConnectionStatus(true)
-                if (status === "Connected" || status === "Disconnected") {
-                    openDisconnectSection()
-                } else {
-                    openConnectSection()
-                    if (status === "Connecting") {
-                        await fetch("/api/disconnect", { method: "POST" })
-                        await updateConnectionStatus()
-                    }
-                }
+            if (deviceId === "nodevice") {
+              alert("Error sending device proposal to the server.")
+              return
             }
 
-            main()
-        </script>
-    </body>
+            showSection("verification-section")
+            deviceIdEl.innerText = deviceId
+            showQrCode(deviceId)
+
+            let status = "Configuring"
+            let tries = 0
+            const MAX_STATUS_RETRIES = 600
+            while (status === "Configuring") {
+              if (tries > MAX_STATUS_RETRIES) break
+              tries++
+              status = await updateConnectionStatus()
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+            if (status === "Connected") {
+              openDisconnectSection()
+            } else {
+              openConnectSection()
+            }
+          } catch(e) {
+            console.error(e)
+            device.IdEl.innerText = "Error!"
+          }
+        })
+
+        const main = async () => {
+          const status = await updateConnectionStatus(true)
+          if (status === "Connected" || status === "Disconnected") {
+            openDisconnectSection()
+          } else {
+            openConnectSection()
+            if (status === "Connecting") {
+              await fetch("/api/disconnect", { method: "POST" })
+              await updateConnectionStatus()
+            }
+          }
+        }
+
+        main()
+      </script>
+  </body>
 </html>
 """ % { "style": style, "navbar": get_navbar("connection"), "statusScript": connection_status_script }
         await response.send(html)
@@ -382,8 +380,9 @@ async def get_asset_{index}(request, response):
     @app.route('/api/connect', methods=['POST'], save_headers=['Content-Length'])
     async def setupConnection(request, response):
         print('Received connect request.')
-        serverDomainName = await request.read_data()
-        print(f'Attempting to connect to {serverDomainName}.')
+        rawData = await request.read_data()
+        [serverDomainName, cert] = rawData.split('_')
+        print(f'Attempting to connect to {serverDomainName} with public key cert {cert}.')
 
         nonlocal proposal
         nonlocal serverConnection
@@ -419,7 +418,7 @@ async def get_asset_{index}(request, response):
             nonlocal proposal
             proposal = None
 
-        proposal = Proposal(serverDomainName, None, event_loop, espStation, handleAccepted, handleRejected)
+        proposal = Proposal(serverDomainName, cert, event_loop, espStation, handleAccepted, handleRejected)
 
         deviceID = await proposal.propose()
         print(f'Sending back device id : {deviceID}')
@@ -469,7 +468,7 @@ async def start_webrepl():
 
 async def main(event_loop):
     DEVELOPMENT_MODE = False
-    STATION_SERVER_MODE = True
+    STATION_SERVER_MODE = False
 
     station = EspStation()
     if STATION_SERVER_MODE:

@@ -21,7 +21,12 @@ class ApplicationConfiguration {
     public portNumber: number,
     public serverDomain: string,
     public confirmationTokenLifetime: number = 2000,
-    public environment: 'production' | 'development'
+    public environment: 'production' | 'development',
+    public tlsPrivateKeyPath: string,
+    public tlsPublicCertPath: string,
+    public enableTlsTermination: boolean,
+    public postgresqlConnectionString: string | null,
+    public defaultAccountPassword: string | null
   ) { }
 }
 

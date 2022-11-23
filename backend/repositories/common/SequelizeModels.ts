@@ -1,4 +1,6 @@
 import { DataTypes, Model, ModelStatic, Sequelize, HasMany, BelongsTo } from 'sequelize'
+import { parse as parsePostgresConnString } from 'pg-connection-string'
+import { NotImplementedError } from '../../common/Errors'
 
 type AssociationTypes = HasMany | BelongsTo
 
@@ -38,7 +40,10 @@ abstract class SequelizeInstance {
     this.associations[modelName].push(new SequelizeAssociation(propertyName, association))
   }
 
-  constructor() {
+  // TODO: Not the best implementation of design patterns. plz fix.
+  protected connectionString: string
+  constructor(connectionString: string) {
+    this.connectionString = connectionString
     this.sequelize = this.getSequelize()
   }
 
@@ -120,7 +125,8 @@ abstract class SequelizeInstance {
 
     const ClaimInstance = this.sequelize.define(SequelizeInstance.modelNames.claimInstance, {
       [SequelizeInstance.getId(SequelizeInstance.modelNames.account)]: {
-        type: DataTypes.UUIDV4,
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
         references: {
           model: Account,
           key: 'id'
@@ -144,7 +150,7 @@ abstract class SequelizeInstance {
 
     const DeviceProfile = this.sequelize.define(SequelizeInstance.modelNames.deviceProfile, {
       id: {
-        type: DataTypes.UUIDV4,
+        type: DataTypes.UUID,
         allowNull: false,
         primaryKey: true
       },
@@ -264,23 +270,6 @@ abstract class SequelizeInstance {
 
     await this.sequelize.sync()
 
-    await AdminPrivileges.bulkCreate([
-      {
-        name: 'End User',
-        system: true,
-        canManageAccounts: false,
-        canManageLocks: true,
-        isSuperAdmin: false
-      }, 
-      {
-        name: 'Super Admin',
-        system: true,
-        canManageAccounts: true,
-        canManageLocks: true,
-        isSuperAdmin: true
-      }
-    ])
-
     return this
   }
 
@@ -294,9 +283,33 @@ abstract class SequelizeInstance {
 }
 
 class InMemorySqliteSequelizeInstance extends SequelizeInstance {
+  constructor() { super('') }
   protected getSequelize(): Sequelize {
     return new Sequelize('sqlite::memory')
   }
 }
 
-export { SequelizeInstance, InMemorySqliteSequelizeInstance }
+class PostgresSequelizeInstance extends SequelizeInstance {
+  constructor (connectionString: string) { 
+    super(connectionString)
+  }
+
+  protected getSequelize(): Sequelize {
+    const { host, port, user, password, database } = parsePostgresConnString(this.connectionString)
+    
+    if (host && port && user && password && database) {
+      return new Sequelize({
+        dialect: 'postgres',
+        host,
+        port: Number.parseInt(port),
+        username: user,
+        password,
+        database
+      })
+    } else {
+      throw new NotImplementedError()
+    }
+  }
+}
+
+export { SequelizeInstance, InMemorySqliteSequelizeInstance, PostgresSequelizeInstance }

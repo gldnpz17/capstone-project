@@ -3,7 +3,7 @@ import { BcryptJsPasswordService } from './domain-model/services/PasswordService
 import { TotpGeneratorTotpService } from './domain-model/services/TotpService';
 import { JwtTransientTokenService } from './domain-model/services/TransientTokenService';
 import { SequelizeAccountsRepository } from "./repositories/AccountsRepository";
-import { InMemorySqliteSequelizeInstance } from './repositories/common/SequelizeModels';
+import { InMemorySqliteSequelizeInstance, PostgresSequelizeInstance, SequelizeInstance } from './repositories/common/SequelizeModels';
 import { AccountUseCases, AccessToken, RefreshToken, SecondFactorSetupToken, SecondFactorToken } from "./use-cases/AccountUseCases";
 import { AuthenticationTokenUtils } from './presentation/common/AuthenticationTokenUtils';
 import { SelfInspectionResolvers } from './presentation/resolvers/SelfInspectionResolvers';
@@ -34,15 +34,18 @@ import { SequelizeAuthorizationRulesRepository } from './repositories/Authorizat
 import { InMemoryDeviceRegistrationService, VerificationToken } from './domain-model/services/DeviceRegistrationService';
 import express, { ErrorRequestHandler, RequestHandler } from 'express';
 import { authenticator } from 'otplib'
-import { createServer } from 'http';
+import { createServer as createHttpServer, Server as HttpServer } from 'http';
+import { createServer as createHttpsServer, Server as HttpsServer } from 'https'
 import { NotImplementedError } from './common/Errors';
 import { shield, rule, allow, or } from 'graphql-shield';
 import { IRuleResult } from 'graphql-shield/typings/types';
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
+import { readFileSync } from 'fs'
+import { ForStatement } from 'ts-morph';
 
-async function initDatabase(
+async function initInMemoryDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
   accountUseCases: AccountUseCases,
   smartLockUseCases: SmartLockUseCases,
@@ -83,24 +86,6 @@ async function initDatabase(
     totp: bismaToken
   })
 
-  const aldeTotpSecret = "OZAAUWBQZZNSYLQA"
-  const aldeToken = authenticator.generate(aldeTotpSecret)
-  const alde = await accountUseCases.register({ 
-    username: 'aldebaran', 
-    password: 'aldebaran',
-    privilegeId: 1
-  })
-  const aldeAuthenticationResult = await accountUseCases.authenticatePassword({
-    username: alde.username,
-    password: 'aldebaran'
-  })
-  if (!aldeAuthenticationResult.secondFactorSetupToken) throw new Error("Error initializing test account: 'Alde'.")
-  await accountUseCases.setupSecondFactor({
-    secondFactorSetupToken: aldeAuthenticationResult.secondFactorSetupToken,
-    sharedSecret: aldeTotpSecret,
-    totp: aldeToken
-  })
-
   await accountUseCases.addClaim({
     typeId: name.id,
     accountId: bisma.id,
@@ -111,14 +96,46 @@ async function initDatabase(
     accountId: bisma.id,
     value: medicineOption.value
   })
-  await accountUseCases.addClaim({
-    typeId: age.id,
-    accountId: alde.id,
-    value: 23
-  })
 
   await smartLockUseCases.create({ name: 'Ruang E6' })
-  const lab = await smartLockUseCases.create({ name: 'Lab Informatika' })
+  await smartLockUseCases.create({ name: 'Lab Informatika' })
+}
+
+async function initDatabase(
+  config: ApplicationConfiguration, 
+  accountUseCases: AccountUseCases,
+  privilegePresetUseCases: AdminPrivilegeUseCases
+) {
+  const accounts = await accountUseCases.readAll({ start: 0, count: 100000 })
+  const presets = await privilegePresetUseCases.readAll({ start: 0, count: 100000 })
+
+  if (!config.defaultAccountPassword) throw new NotImplementedError()
+
+  if (presets.length == 0) {
+    console.log('Creating default privilege presets,')
+    await privilegePresetUseCases.createSystem({
+      name: 'End User',
+      canManageAccounts: false,
+      canManageLocks: false,
+      isSuperAdmin: false
+    })
+
+    await privilegePresetUseCases.createSystem({
+      name: 'Administrator',
+      canManageAccounts: true,
+      canManageLocks: true,
+      isSuperAdmin: true
+    })
+  }
+
+  if (accounts.length == 0) {
+    console.log('Creating default account.')
+    await accountUseCases.register({ 
+      username: 'admin', 
+      password: config.defaultAccountPassword,
+      privilegeId: 2
+    })
+  }
 }
 
 async function main() {
@@ -135,7 +152,7 @@ function authorize(request: SmartLock.Request, args: Args) {
 }`
 
   const config = new ApplicationConfiguration(
-    Math.random().toString(),
+    process.env.JWT_SIGNING_KEY ?? Math.random().toString(),
     [
       new AdminPrivilege(
         AdminPrivilegeNames.canManageAccounts,
@@ -152,10 +169,23 @@ function authorize(request: SmartLock.Request, args: Args) {
     4000,
     process.env.SERVER_DOMAIN_NAME ?? 'localhost:4000',
     2000,
-    'development'
+    // @ts-ignore
+    process.env.NODE_ENV ?? 'development',
+    process.env.TLS_PRIVATE_KEY_PATH ?? '',
+    process.env.TLS_PUBLIC_CERT_PATH ?? '',
+    Boolean(process.env.ENABLE_TLS_TERMINATION),
+    process.env.POSTGRESQL_CONNECTION_STRING ?? null,
+    process.env.DEFAULT_ADMIN_PASSWORD ?? null
   )
 
-  const inMemoryDb = await new InMemorySqliteSequelizeInstance().initialize()
+  let databaseInstance: SequelizeInstance | null = null
+  if (config.postgresqlConnectionString) {
+    console.log('Using PostgreSQL database.')
+    databaseInstance = await new PostgresSequelizeInstance(config.postgresqlConnectionString).initialize()
+  } else {
+    console.log('Using in-memory SQLite database.')
+    databaseInstance = await new InMemorySqliteSequelizeInstance().initialize()
+  }
   const deviceProfileStatusStore = new TransientKeyValueService(5000)
   const lockStatusStore = new InMemoryKeyValueService({ default: 'locked' })
   const rulesEngineService = new TypeScriptRulesEngineService()
@@ -173,12 +203,12 @@ function authorize(request: SmartLock.Request, args: Args) {
     adminPrivilegePresetMapper
   )
   const accountsRepository = new SequelizeAccountsRepository(
-    inMemoryDb,
+    databaseInstance,
     accountMapper
   )
 
   const claimTypesRepository = new SequelizeClaimTypesRepository(
-    inMemoryDb,
+    databaseInstance,
     claimTypeMapper
   )
 
@@ -186,7 +216,7 @@ function authorize(request: SmartLock.Request, args: Args) {
   
   const deviceMapper = new DeviceProfileMapper(shallowSmartLockMapper)
   const devicesRepository = new SequelizeDeviceProfilesRepository(
-    inMemoryDb,
+    databaseInstance,
     deviceMapper
   )
 
@@ -198,7 +228,7 @@ function authorize(request: SmartLock.Request, args: Args) {
     shallowSmartLockMapper
   )
   const smartLocksRepository = new SequelizeSmartLocksRepository(
-    inMemoryDb,
+    databaseInstance,
     smartLockMapper
   )
 
@@ -207,7 +237,7 @@ function authorize(request: SmartLock.Request, args: Args) {
     shallowSmartLockMapper
   )
   const authorizationRulesRepository = new SequelizeAuthorizationRulesRepository(
-    inMemoryDb,
+    databaseInstance,
     authorizationRuleMapper
   )
 
@@ -223,7 +253,7 @@ function authorize(request: SmartLock.Request, args: Args) {
     refreshTokenService,
     accessTokenService,
     new SequelizeClaimInstancesRepository(
-      inMemoryDb,
+      databaseInstance,
       claimInstanceMapper,
       claimTypesRepository
     )
@@ -233,7 +263,7 @@ function authorize(request: SmartLock.Request, args: Args) {
     config,
     accountsRepository,
     new SequelizeAdminPrivilegePresetRepository(
-      inMemoryDb,
+      databaseInstance,
       adminPrivilegePresetMapper
     )
   )
@@ -241,7 +271,7 @@ function authorize(request: SmartLock.Request, args: Args) {
   const claimTypeUseCases = new ClaimTypeUseCases(
     claimTypesRepository,
     new SequelizeEnumClaimTypeOptionsRepository(
-      inMemoryDb,
+      databaseInstance,
       new EnumClaimTypeOptionsMapper()
     )
   )
@@ -283,10 +313,22 @@ function authorize(request: SmartLock.Request, args: Args) {
 
   const authenticationTokenUtils = new AuthenticationTokenUtils()
 
-  await initDatabase(claimTypeUseCases, accountUseCases, smartLockUseCases, authorizationRuleUseCases)
+  if (!config.postgresqlConnectionString) {
+    await initInMemoryDatabase(claimTypeUseCases, accountUseCases, smartLockUseCases, authorizationRuleUseCases)
+  } else {
+    await initDatabase(config, accountUseCases, privilegeUseCases)
+  }
 
   const expressApp = express()
-  const httpServer = createServer(expressApp)
+  let httpServer: HttpServer | HttpsServer | null = null
+  if (config.enableTlsTermination) {
+    httpServer = createHttpsServer({
+      key: readFileSync(config.tlsPrivateKeyPath),
+      cert: readFileSync(config.tlsPublicCertPath)
+    }, expressApp)
+  } else {
+    httpServer = createHttpServer(expressApp)
+  }
 
   // TODO: Clean up these endpoints.
   const wrapAsyncHandler = (handle: RequestHandler) => (req: any, res: any, next: any) => {
@@ -296,6 +338,7 @@ function authorize(request: SmartLock.Request, args: Args) {
   }
 
   expressApp.use(express.json())
+  // @ts-ignore
   expressApp.use(cookieParser())
 
   if (config.environment == 'development') {
@@ -402,6 +445,10 @@ function authorize(request: SmartLock.Request, args: Args) {
     if (tokenDeviceId != deviceId) throw new NotImplementedError()
   }
 
+  expressApp.get('/health', wrapAsyncHandler(async (req, res) => {
+    res.send('Everything\'s fine.')
+  }))
+
   expressApp.get('/devices/:id/messages/subscribe', wrapAsyncHandler(async (req, res) => {
     const { id } = req.params
     const { authorization } = req.headers
@@ -494,7 +541,7 @@ function authorize(request: SmartLock.Request, args: Args) {
 
   const apolloServer = await new ApolloGraphqlServer(
     [
-      new SequelizeReadResolvers(inMemoryDb),
+      new SequelizeReadResolvers(databaseInstance),
       new AccountResolvers(accountUseCases),
       new ClaimTypeResolvers(claimTypeUseCases),
       new TotpUtilitiesResolvers(accountUseCases),

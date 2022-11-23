@@ -32,6 +32,16 @@ class AdminPrivilegeUseCases {
   }) => {
     await this.privilegesRepository.create({ system: false, ...privilege })
   }
+
+  createSystem = async (privilege: {
+    name: string,
+    canManageAccounts: boolean,
+    canManageLocks: boolean,
+    isSuperAdmin: boolean
+  }) => {
+    await this.privilegesRepository.create({ system: true, ...privilege })
+  }
+
   readById = this.privilegesRepository.readById
   readAll = this.privilegesRepository.readAll
   readByAccountId = this.privilegesRepository.readByAccountId

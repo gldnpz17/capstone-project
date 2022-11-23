@@ -27,9 +27,10 @@ class Proposal:
 
     async def get_device_token(self):
         response = await aurequests.post(
-            f'http://{self.serverDomainName}/auth/get-device-token',
+            f'https://{self.serverDomainName}/auth/get-device-token',
             headers={ 'Content-Type': 'application/json' },
-            data=f'{{ "verificationToken": "{self.verificationToken}" }}'
+            data=f'{{ "verificationToken": "{self.verificationToken}" }}',
+            cert=self.cert
         )
 
         return response.text
@@ -43,7 +44,10 @@ class Proposal:
                     print("get_proposal_status max retries reached.")
                     return None
                 retries = retries + 1
-                response = await aurequests.get(f'http://{self.serverDomainName}/devices/{self.deviceId}/proposal-status')
+                response = await aurequests.get(
+                    f'https://{self.serverDomainName}/devices/{self.deviceId}/proposal-status',
+                    cert=self.cert
+                )
             except aurequests.TimeoutError: # type: ignore
                 print("get_proposal_status timed out. retrying...")
 
@@ -76,9 +80,10 @@ class Proposal:
         formattedMacAddress = self.format_mac_address(ubinascii.hexlify(macAddress).decode().upper())
 
         response = await aurequests.post(
-            f'http://{self.serverDomainName}/devices/propose',
+            f'https://{self.serverDomainName}/devices/propose',
             headers={ 'Content-Type': 'application/json' },
-            data=f'{{ "macAddress": "{formattedMacAddress}" }}'
+            data=f'{{ "macAddress": "{formattedMacAddress}" }}',
+            cert=self.cert
         )
 
         result = response.json
@@ -122,8 +127,9 @@ class ServerConnection:
         while not response:
             try:
                 response = await aurequests.post(
-                    f'http://{self.proposal.serverDomainName}/devices/{self.proposal.deviceId}/ping',
-                    headers={ 'authorization': f'Bearer {self.proposal.deviceToken}'}
+                    f'https://{self.proposal.serverDomainName}/devices/{self.proposal.deviceId}/ping',
+                    headers={ 'authorization': f'Bearer {self.proposal.deviceToken}'},
+                    cert=self.proposal.cert
                 )
             except aurequests.TimeoutError: # type: ignore
                 print("send_ping timed out. retrying...")
@@ -138,8 +144,9 @@ class ServerConnection:
 
     async def sync_command(self):
         response = await aurequests.get(
-            f'http://{self.proposal.serverDomainName}/devices/{self.proposal.deviceId}/sync-command',
+            f'https://{self.proposal.serverDomainName}/devices/{self.proposal.deviceId}/sync-command',
             headers={ 'authorization': f'Bearer {self.proposal.deviceToken}'},
+            cert=self.proposal.cert
         )
 
         print(f"Synced command : {response.text}")
@@ -150,8 +157,9 @@ class ServerConnection:
         while not response:
             try:
                 response = await aurequests.get(
-                    f'http://{self.proposal.serverDomainName}/devices/{self.proposal.deviceId}/messages/subscribe', 
-                    headers={ 'authorization': f'Bearer {self.proposal.deviceToken}' }
+                    f'https://{self.proposal.serverDomainName}/devices/{self.proposal.deviceId}/messages/subscribe', 
+                    headers={ 'authorization': f'Bearer {self.proposal.deviceToken}' },
+                    cert=self.proposal.cert
                 )
             except aurequests.TimeoutError: # type: ignore
                 print("get_message timed out. retrying...")
