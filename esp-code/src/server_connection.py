@@ -49,6 +49,7 @@ class Proposal:
                     cert=self.cert
                 )
             except aurequests.TimeoutError: # type: ignore
+                print(f"Free memory: {gc.mem_free()}")
                 print("get_proposal_status timed out. retrying...")
 
         return response.text
@@ -165,7 +166,7 @@ class ServerConnection:
                 print("get_message timed out. retrying...")
 
         if response.status_code == 502:
-            raise Exception()  # type: ignore
+            raise Exception("Timeout code received.")  # type: ignore
         elif response.status_code == 200:
             return response.text
         else:
@@ -175,22 +176,30 @@ class ServerConnection:
     async def subscribe_to_data(self, cancellationToken: CancellationToken):
         while True:
             try:
+                gc.collect()
                 if cancellationToken.cancelled:
                     return
                 data = await self.get_message()
                 print(f"Data received : {data}") # type: ignore
                 self.messageHandler(data)
-            except Exception: # type: ignore
+            except Exception as err: # type: ignore
+                print(err)
+                print(f"Free memory: {gc.mem_free()}")
+                await uasyncio.sleep(0.5)
                 print('Unhandled error subscribing to server data. Retrying...')
 
     async def periodically_send_ping(self, cancellationToken: CancellationToken):
         while True:
             try:
+                gc.collect()
                 if cancellationToken.cancelled:
                     return
                 await self.send_ping()
                 await uasyncio.sleep(5)  # type: ignore
-            except Exception: # type: ignore
+            except Exception as err: # type: ignore
+                print(err)
+                print(f"Free memory: {gc.mem_free()}")
+                await uasyncio.sleep(0.5)
                 print('Unhandled error sending ping to the server. Retrying...')
 
     def stop(self):

@@ -284,7 +284,7 @@ function authorize(request: SmartLock.Request, args: Args) {
   const deviceTokenService = new JwtTransientTokenService<DeviceToken>(config, "DeviceToken")
 
   const deviceRegistrationService = new InMemoryDeviceRegistrationService(
-    3 * 60 * 1000,
+    5 * 60 * 1000,
     verificationTokenService
   )
 
@@ -324,7 +324,7 @@ function authorize(request: SmartLock.Request, args: Args) {
   if (config.enableTlsTermination) {
     httpServer = createHttpsServer({
       key: readFileSync(config.tlsPrivateKeyPath),
-      cert: readFileSync(config.tlsPublicCertPath)
+      cert: readFileSync(config.tlsPublicCertPath),
     }, expressApp)
   } else {
     httpServer = createHttpServer(expressApp)

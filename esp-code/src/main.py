@@ -9,7 +9,7 @@ from esp_network import EspStation, EspAccessPoint
 
 style = """
 <style>
-    @font-face {font-family: "Inter";src: url("/public/Inter-Regular.ttf");}body {--color-main: #4f6aba;--color-main-dark: #1f3e9a;font-family: 'Inter';display: flex;flex-direction: column;margin: 0;position: relative;}#navbar {display: flex;gap: 1rem;background-color: white;height: 3rem;align-items: center;padding-left: 4rem;padding-right: 4rem;z-index: 100;filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06));}#navbar img {aspect-ratio: 1;height: 2rem;}#navbar .product-name {font-weight: bolder;margin-right: 1rem;font-size: 1.1rem;color: var(--color-main);}#navbar a {color: black !important;cursor: pointer;text-decoration: none;}#navbar a.selected {box-sizing: border-box;margin-top: 2px;border-bottom: 2px solid var(--color-main);}#content {padding: 2rem 4rem;}.flex-space {flex-grow: 1;}label {display: flex;flex-direction: column;}label input textarea {margin-top: 0.375rem;}input textarea {padding: 0.5rem 0.75rem;font-size: 1rem;border-radius: 0.375rem;border: 2px solid gray;}form {max-width: 24rem;display: flex;flex-direction: column;gap: 1rem;}button {border-radius: 0.375rem;transition: all 0.2s;font-size: 1rem;padding: 0.75rem;border: 0;color: white;background-color: var(--color-main);cursor: pointer;}button:hover {background-color: var(--color-main-dark);}.hidden {display: none !important;}#verification-section {display: flex;flex-direction: column;gap: 1rem;}#verify-qr {width: 14rem;}#verification-section p {width: 24rem;color: gray;}#disconnect-section {display: flex;flex-direction: column;width: 24rem;gap: 1rem;}#disconnect-section p {width: 24rem;color: gray;}#disconnect-section button {align-self: flex-start;}p {margin: 0;}#network-forms-container {display: flex;flex-direction: column;gap: 2rem;}#network-forms-container form {margin-bottom: 1rem;}
+    @font-face {font-family: "Inter";src: url("/public/Inter-Regular.ttf");}body {--color-main: #4f6aba;--color-main-dark: #1f3e9a;font-family: 'Inter';display: flex;flex-direction: column;margin: 0;position: relative;}#navbar {display: flex;gap: 1rem;background-color: white;height: 3rem;align-items: center;padding-left: 4rem;padding-right: 4rem;z-index: 100;filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06));}#navbar img {aspect-ratio: 1;height: 2rem;}#navbar .product-name {font-weight: bolder;margin-right: 1rem;font-size: 1.1rem;color: var(--color-main);}#navbar a {color: black !important;cursor: pointer;text-decoration: none;}#navbar a.selected {box-sizing: border-box;margin-top: 2px;border-bottom: 2px solid var(--color-main);}#content {padding: 2rem 4rem;}.flex-space {flex-grow: 1;}label {display: flex;flex-direction: column;}label input {margin-top: 0.375rem;}input {padding: 0.5rem 0.75rem;font-size: 1rem;border-radius: 0.375rem;border: 2px solid gray;}form {max-width: 24rem;display: flex;flex-direction: column;gap: 1rem;}button {border-radius: 0.375rem;transition: all 0.2s;font-size: 1rem;padding: 0.75rem;border: 0;color: white;background-color: var(--color-main);cursor: pointer;}button:hover {background-color: var(--color-main-dark);}.hidden {display: none !important;}#verification-section {display: flex;flex-direction: column;gap: 1rem;}#verify-qr {width: 14rem;}#verification-section p {width: 24rem;color: gray;}#disconnect-section {display: flex;flex-direction: column;width: 24rem;gap: 1rem;}#disconnect-section p {width: 24rem;color: gray;}#disconnect-section button {align-self: flex-start;}p {margin: 0;}#network-forms-container {display: flex;flex-direction: column;gap: 2rem;}#network-forms-container form {margin-bottom: 1rem;} textarea {margin-top: 0.375rem;} textarea {padding: 0.5rem 0.75rem;font-size: 1rem;border-radius: 0.375rem;border: 2px solid gray;}
 </style>
 """
 
@@ -85,85 +85,76 @@ async def get_asset_{index}(request, response):
         html =  """
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>[Network] Smart Lock</title>
-        %(style)s
-    </head>
-    <body>
-        %(navbar)s
-        <div id="content">
-            <div id="network-forms-container">
-                <div><b>Station Settings</b></div>
-                <form id="station-form">
-                    <label>SSID
-                        <input name="ssid" required />
-                    </label>
-                    <label>Password
-                        <input name="pass" type="password" required />
-                    </label>
-                    <button type="submit">Connect</button>
-                </form>
+  <head>
+    <meta charset="UTF-8">
+    <title>[Network] Smart Lock</title>
+    %(style)s
+  </head>
+  <body>
+    %(navbar)s
+    <div id="content">
+      <div id="network-forms-container">
+        <div><b>Station Settings</b></div>
+        <form id="station-form">
+          <label>SSID
+            <input name="ssid" required />
+          </label>
+          <label>Password
+            <input name="pass" type="password" required />
+          </label>
+          <button type="submit">Connect</button>
+        </form>
 
-                <div><b>Access Point Settings</b></div>
-                <form id="ap-form">
-                    <label>SSID
-                        <input name="ssid" required />
-                    </label>
-                    <label>Password
-                        <input name="pass" type="password" required />
-                    </label>
-                    <button type="submit">Set Credentials</button>
-                </form>
-            </div>
-        </div>
-        <script src="/public/qrcode.js"></script>
-        %(statusScript)s
-        <script>
-            const stationFormEl = document.getElementById("station-form")
-            const apFormEl = document.getElementById("ap-form")
+        <div><b>Access Point Settings</b></div>
+        <form id="ap-form">
+          <label>SSID
+            <input name="ssid" required />
+          </label>
+          <label>Password
+            <input name="pass" type="password" required />
+          </label>
+          <button type="submit">Set Credentials</button>
+        </form>
+      </div>
+    </div>
+    <script src="/public/qrcode.js"></script>
+    %(statusScript)s
+    <script>
+      const stationFormEl = document.getElementById("station-form")
+      const apFormEl = document.getElementById("ap-form")
 
-            stationFormEl.addEventListener("submit", async (e) => {
-                try {
-                    e.preventDefault()
-                    const { ssid, pass } = e.target
-                    const response = await fetch("/api/configure-station", {
-                        method: "POST",
-                        body: `${ssid.value},${pass.value}`
-                    })
-                    if (response.status === 200) {
-                        alert('Success')
-                        e.target.reset()
-                    } else {
-                        console.error(response)
-                    }
-                } catch(err) {
-                    console.error(err)
-                    alert('An error has occured.')
-                }
-            })
+      stationFormEl.addEventListener("submit", async (e) => {
+        try {
+          e.preventDefault()
+          const { ssid, pass } = e.target
+          const response = await fetch("/api/configure-station", {
+            method: "POST",
+            body: `${ssid.value},${pass.value}`
+          })
+          if (response.status === 200) {
+            alert(await response.text())
+            e.target.reset()
+          } else {
+            console.error(response)
+          }
+        } catch(err) {
+          console.error(err)
+          alert('An error has occured.')
+        }
+      })
 
-            apFormEl.addEventListener("submit", async (e) => {
-                try {
-                    e.preventDefault()
-                    const { ssid, pass } = e.target
-                    const response = await fetch("/api/configure-access-point", {
-                        method: "POST",
-                        body: `${ssid.value},${pass.value}`
-                    })
-                    if (response.status === 200) {
-                        alert('Success')
-                        e.target.reset()
-                    } else {
-                        console.error(response)
-                    }
-                } catch(err) {
-                    console.error(err)
-                    alert('An error has occured.')
-                }
-            })
-        </script>
-    </body>
+      apFormEl.addEventListener("submit", async (e) => {
+        e.preventDefault()
+        const { ssid, pass } = e.target
+        fetch("/api/configure-access-point", {
+          method: "POST",
+          body: `${ssid.value},${pass.value}`
+        })
+        alert("Access point credentials changed. Please reconnect.")
+        location.reload()
+      })
+    </script>
+  </body>
 </html>
 """ % { "style": style, "navbar": get_navbar("network"), "statusScript": connection_status_script }
         await response.send(html)
@@ -439,14 +430,15 @@ async def get_asset_{index}(request, response):
         nonlocal serverConnection
         nonlocal espStation
 
-        espStation.connect(ssid, password)
+        success = await espStation.connect(ssid, password)
 
         await response.start_html()
-        await response.send('Success')
+        await response.send('Success' if success else 'Failed')
 
     @app.route('/api/configure-access-point', methods=['POST'], save_headers=['Content-Length'])
     async def configureAccessPoint(request, response):
         print('Received access point configuration request.')
+        nonlocal event_loop
         
         content = await request.read_data()
         [ssid, password] = content.split(',')
@@ -454,10 +446,7 @@ async def get_asset_{index}(request, response):
 
         nonlocal espAccessPoint
 
-        espAccessPoint.start(ssid, password)
-
-        await response.start_html()
-        await response.send('Success')
+        event_loop.create_task(espAccessPoint.start(ssid, password))
 
     app.run(host=serverIpAddr, port=8081)
     print("Web server started.")

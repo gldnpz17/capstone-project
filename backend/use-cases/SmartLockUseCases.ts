@@ -50,12 +50,10 @@ class SmartLockUseCases {
 
     if (!device) return { success: false }
 
-    const { privateKey, publicKey } = this.digitalSignatureService.generateKeyPair()
-
     await this.devicesRepository.create({
       id: device.id,
-      privateKey,
-      publicKey,
+      privateKey: '',
+      publicKey: '',
       macAddress: device.macAddress
     })
 
