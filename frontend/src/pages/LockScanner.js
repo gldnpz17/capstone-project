@@ -1,9 +1,10 @@
 import { useLazyQuery, useMutation, useQuery } from "@apollo/client"
-import { History, LockOpen, QrCodeScanner, Settings, Lock } from "@mui/icons-material"
+import { History, LockOpen, QrCodeScanner, Settings, Lock, Cancel, Logout } from "@mui/icons-material"
 import { Box, Button, CircularProgress, Fab, IconButton, Stack } from "@mui/material"
 import QrScanner from "qr-scanner"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { authorizeAuthenticatedPage } from "../higher-order-components/authorizePage"
+import { INSPECT_SELF, LOGOUT } from "../queries/Accounts"
 import { READ_SMART_LOCK_STATUS, SEND_COMMAND } from "../queries/SmartLocks"
 
 const LockScannerPage = () => {
@@ -15,8 +16,18 @@ const LockScannerPage = () => {
     loading,
   }] = useLazyQuery(READ_SMART_LOCK_STATUS, { fetchPolicy: 'network-only' })
   const [stream, setStream] = useState(null)
+  const [imgSrc, setImgSrc] = useState("")
 
   const videoRef = useRef()
+
+  const [logout] = useMutation(LOGOUT, {
+    refetchQueries: [{ query: INSPECT_SELF }]
+  })
+
+  const handleLogout = async () => {
+    await logout()
+    window.location.reload()
+  }
 
   useEffect(() => {
     (async () => {
@@ -60,6 +71,25 @@ const LockScannerPage = () => {
     }
   }, [smartLockId])
 
+  useEffect(() => {
+    if (videoRef.current) {
+      if (smartLockId) {
+        const canvas = document.createElement('canvas')
+
+        const { videoWidth, videoHeight } = videoRef.current
+        canvas.width = videoWidth
+        canvas.height = videoHeight
+  
+        canvas.getContext('2d').drawImage(videoRef.current, 0, 0, videoWidth, videoHeight)
+  
+        const dataUrl = canvas.toDataURL()
+        setImgSrc(dataUrl)
+      } else {
+        setImgSrc("")
+      }
+    }
+  }, [smartLockId])
+
   const handleActionButton = useCallback(async () => {
     let command = null
     switch (lockStatus) {
@@ -100,6 +130,8 @@ const LockScannerPage = () => {
     }
   }, [lockStatus, smartLockId])
 
+  const previewStyle = { position: "absolute", inset: "-5px", zIndex: 10, height: "calc(100vh + 10px)", width: "calc(100vw + 10px)", objectFit: "cover" }
+
   return (
     <Stack 
       sx={{ 
@@ -113,7 +145,10 @@ const LockScannerPage = () => {
       alignItems="center" 
       justifyContent="center"
     >
-      <video ref={videoRef} style={{ height: "calc(100vh + 10px)", width: "calc(100vw + 10px)", objectFit: "cover" }} id="camera-preview" />
+      <video ref={videoRef} style={{ ...previewStyle, zIndex: 10 }} id="camera-preview" />
+      {imgSrc && (
+        <img style={{ ...previewStyle, zIndex: 20 }} src={imgSrc} />
+      )}
       <Stack 
         sx={{ 
           position: "absolute", 
@@ -122,15 +157,16 @@ const LockScannerPage = () => {
           bottom: -5, 
           px: 6, 
           py: 4,
-          backdropFilter: "blur(2px)"
+          backdropFilter: "blur(2px)",
+          zIndex: 30
         }} 
         direction="row" 
         justifyContent="center"
       >
         <Box sx={{ position: "absolute", inset: "0", backgroundColor: "black", opacity: "60%" }} />
         <Stack gap={6} direction="row" alignItems="center">
-          <IconButton>
-            <History fontSize="large" htmlColor="white" />
+          <IconButton onClick={() => setSmartLockId(null)}>
+            <Cancel fontSize="large" htmlColor="white" />
           </IconButton>
           <Stack sx={{ zIndex: 10, width: "4rem", aspectRatio: "1", position: "relative" }} alignItems="center" justifyContent="center">
             {!smartLockId || loading
@@ -153,8 +189,8 @@ const LockScannerPage = () => {
                 </Fab>
               )}
           </Stack>
-          <IconButton>
-            <Settings fontSize="large" htmlColor="white" />
+          <IconButton onClick={handleLogout}>
+            <Logout fontSize="large" htmlColor="white" />
           </IconButton>
         </Stack>
       </Stack>
