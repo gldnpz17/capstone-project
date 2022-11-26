@@ -31,9 +31,11 @@ class AuthorizationRuleUseCases {
   saveChanges = async (params: { id: number, authorizationRule: string }): Promise<void> => {
     const { id, authorizationRule } = params
 
+    const savedFormSchema = this.rulesEngineService.generateFormSchema(authorizationRule)
+
     await this.repository.update(id, {
       savedRule: authorizationRule,
-      savedFormSchema: this.rulesEngineService.generateFormSchema(authorizationRule)
+      savedFormSchema
     })
   }
 

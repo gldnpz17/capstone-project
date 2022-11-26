@@ -154,7 +154,7 @@ const VerifyDevice = ({ lock, close }) => {
     return (
         <Stack spacing={2}>
             <Typography>
-                Scan the QR code in the ESP configuration page or enter the device ID manually
+                Enter the device ID manually
             </Typography>
             <form onSubmit={handleSubmit}>
                 <Stack direction="row" spacing={1} justifyContent="center">
@@ -215,9 +215,9 @@ function SmartLockSetting({ lock }) {
                         <Typography align="left" style={{ fontWeight: 500 }} color="#333333">
                             <b>Lock :</b> {lock.name}
                         </Typography>
-                        <IconButton>
-                            <Edit />
-                        </IconButton>
+                    {/* <IconButton>
+                        <Edit />
+                    </IconButton> */}
                         <Box sx={{ flexGrow: 1 }} />
                         <IconButton onClick={printQrCode}>
                             <QrCode />

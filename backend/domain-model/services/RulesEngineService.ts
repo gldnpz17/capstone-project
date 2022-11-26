@@ -261,9 +261,9 @@ authorize(globals.request, globals.args)`)
   
     if (!argsTypeReference) throw new FormSchemaError('Cannot find a parameter named "args" inside the "authorize" function.')
   
-    return {
-      root: this._generateGroupSchema(argsTypeReference)
-    }
+    const root = this._generateGroupSchema(argsTypeReference)
+
+    return { root }
   }
 
   generateFormSchema = (code: string): string => JSON.stringify(this._generateFormSchema(code))
