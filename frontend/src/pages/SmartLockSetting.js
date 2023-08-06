@@ -12,6 +12,7 @@ import { Edit, Link, QrCode } from "@mui/icons-material";
 import { handleForm } from "../common/handleForm";
 import QRCode from 'qrcode'
 import html2pdf from "html2pdf.js";
+import { useQrScanner } from "../hooks/useQrScanner";
 
 const SecuritySection = ({ lock, authorizationRules }) => {
     const [createAuthorizationRule] = useMutation(CREATE_AUTHORIZATION_RULE)
@@ -137,9 +138,31 @@ const SecuritySection = ({ lock, authorizationRules }) => {
 }
 
 const VerifyDevice = ({ lock, close }) => {
+    const { videoRef, qrCode, reset } = useQrScanner()
+
     const [verifyDevice] = useMutation(VERIFY_DEVICE, {
         refetchQueries: [{ query: READ_ALL_LOCKS }]
     })
+
+    useEffect(() => {
+        if (!qrCode) return
+
+        (async () => {
+            const response = await verifyDevice({
+                variables: { 
+                    smartLockId: lock.id,
+                    deviceId: qrCode
+                }
+            })
+
+            if (response.errors) {
+                reset()
+                return
+            }
+
+            close()
+        })()
+    }, [qrCode])
 
     const handleSubmit = handleForm(async ({ deviceId }) => {
         await verifyDevice({
@@ -162,6 +185,7 @@ const VerifyDevice = ({ lock, close }) => {
                     <Button type="submit" variant="contained">Verify</Button>
                 </Stack>
             </form>
+            <video ref={videoRef} style={{ width: "100%" }} />
             <Button onClick={close} color="error" variant="contained">Cancel</Button>
         </Stack>
     )

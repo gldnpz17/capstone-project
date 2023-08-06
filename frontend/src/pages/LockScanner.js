@@ -6,19 +6,16 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { authorizeAuthenticatedPage } from "../higher-order-components/authorizePage"
 import { INSPECT_SELF, LOGOUT } from "../queries/Accounts"
 import { READ_SMART_LOCK_STATUS, SEND_COMMAND } from "../queries/SmartLocks"
+import { useQrScanner } from "../hooks/useQrScanner"
 
 const LockScannerPage = () => {
-  const [qr, setQr] = useState(null)
-  const [smartLockId, setSmartLockId] = useState(null)
+  const { previewImgSrc, videoRef, qrCode: smartLockId, reset: resetQrScanner } = useQrScanner()
+
   const [sendCommand] = useMutation(SEND_COMMAND)
   const [getSmartLockStatus, { 
     data: { smartLocks: [{ lockStatus }] } = { smartLocks: [{}] }, 
     loading,
   }] = useLazyQuery(READ_SMART_LOCK_STATUS, { fetchPolicy: 'network-only' })
-  const [stream, setStream] = useState(null)
-  const [imgSrc, setImgSrc] = useState("")
-
-  const videoRef = useRef()
 
   const [logout] = useMutation(LOGOUT, {
     refetchQueries: [{ query: INSPECT_SELF }]
@@ -30,63 +27,8 @@ const LockScannerPage = () => {
   }
 
   useEffect(() => {
-    (async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: 'environment'
-        }
-      })
-
-      setStream(stream)
-    })()
-  }, [])
-
-  useEffect(() => {
-    if (stream && videoRef.current) {
-      videoRef.current.srcObject = stream
-      videoRef.current.addEventListener("loadedmetadata", () => {
-        videoRef.current.play()
-      })
-      const qr = new QrScanner(videoRef.current, result => setSmartLockId(result.data), {})
-      setQr(qr)
-    }
-  }, [stream, videoRef.current])
-
-  useEffect(() => {
-    if (!qr) return
-
-    if (!smartLockId) {
-      qr.start()
-    } else {
-      qr.stop()
-    }
-  }, [smartLockId, qr])
-
-  useEffect(() => {
     if (smartLockId) {
-      getSmartLockStatus({
-        variables: { id: smartLockId }
-      })
-    }
-  }, [smartLockId])
-
-  useEffect(() => {
-    if (videoRef.current) {
-      if (smartLockId) {
-        const canvas = document.createElement('canvas')
-
-        const { videoWidth, videoHeight } = videoRef.current
-        canvas.width = videoWidth
-        canvas.height = videoHeight
-  
-        canvas.getContext('2d').drawImage(videoRef.current, 0, 0, videoWidth, videoHeight)
-  
-        const dataUrl = canvas.toDataURL()
-        setImgSrc(dataUrl)
-      } else {
-        setImgSrc("")
-      }
+      getSmartLockStatus({ variables: { id: smartLockId } })
     }
   }, [smartLockId])
 
@@ -121,11 +63,11 @@ const LockScannerPage = () => {
         alert(`Access denied. Reason : ${denyMessage}`)
       }
   
-      setSmartLockId(null)
+      resetQrScanner()
     } catch (err) {
       alert("An error has occured")
       alert(err)
-      setSmartLockId(null)
+      resetQrScanner()
       return
     }
   }, [lockStatus, smartLockId])
@@ -146,8 +88,8 @@ const LockScannerPage = () => {
       justifyContent="center"
     >
       <video ref={videoRef} style={{ ...previewStyle, zIndex: 10 }} id="camera-preview" />
-      {imgSrc && (
-        <img style={{ ...previewStyle, zIndex: 20 }} src={imgSrc} />
+      {previewImgSrc && (
+        <img style={{ ...previewStyle, zIndex: 20 }} src={previewImgSrc} />
       )}
       <Stack 
         sx={{ 
@@ -165,7 +107,7 @@ const LockScannerPage = () => {
       >
         <Box sx={{ position: "absolute", inset: "0", backgroundColor: "black", opacity: "60%" }} />
         <Stack gap={6} direction="row" alignItems="center">
-          <IconButton onClick={() => setSmartLockId(null)}>
+          <IconButton onClick={() => resetQrScanner()}>
             <Cancel fontSize="large" htmlColor="white" />
           </IconButton>
           <Stack sx={{ zIndex: 10, width: "4rem", aspectRatio: "1", position: "relative" }} alignItems="center" justifyContent="center">

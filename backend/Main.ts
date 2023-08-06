@@ -44,6 +44,8 @@ import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 import { readFileSync } from 'fs'
 import { ForStatement } from 'ts-morph';
+import { wrapAsyncHandler } from './presentation/common/ExpressUtils';
+import { DeviceConnectionService, HttpConnectionStrategy } from './domain-model/services/DeviceConnectionService';
 
 async function initInMemoryDatabase(
   claimTypeUseCases: ClaimTypeUseCases,
@@ -140,6 +142,8 @@ async function initDatabase(
 
 async function main() {
   dotenv.config()
+
+  const expressApp = express()
 
   const DEFAULT_AUTHORIZATION_RULE = 
 `class Args {
@@ -288,18 +292,17 @@ function authorize(request: SmartLock.Request, args: Args) {
     verificationTokenService
   )
 
+  const connectionStrategy = new HttpConnectionStrategy(expressApp, deviceTokenService)
+  const deviceConnectionService = new DeviceConnectionService(lockStatusStore, connectionStrategy)
+
   const smartLockUseCases = new SmartLockUseCases(
     smartLocksRepository,
     devicesRepository,
     accountsRepository,
-    new NodeRsaDigitalSignatureService(),
-    deviceProfileStatusStore,
-    lockStatusStore,
+    deviceConnectionService,
     rulesEngineService,
-    deviceMessagingService,
     verificationTokenService,
     deviceTokenService,
-    config,
     deviceRegistrationService
   )
 
@@ -319,7 +322,6 @@ function authorize(request: SmartLock.Request, args: Args) {
     await initDatabase(config, accountUseCases, privilegeUseCases)
   }
 
-  const expressApp = express()
   let httpServer: HttpServer | HttpsServer | null = null
   if (config.enableTlsTermination) {
     httpServer = createHttpsServer({
@@ -328,13 +330,6 @@ function authorize(request: SmartLock.Request, args: Args) {
     }, expressApp)
   } else {
     httpServer = createHttpServer(expressApp)
-  }
-
-  // TODO: Clean up these endpoints.
-  const wrapAsyncHandler = (handle: RequestHandler) => (req: any, res: any, next: any) => {
-    return Promise
-      .resolve(handle(req, res, next))
-      .catch(next);
   }
 
   expressApp.use(express.json())
@@ -412,85 +407,8 @@ function authorize(request: SmartLock.Request, args: Args) {
     await next()
   }))
 
-  expressApp.post('/devices/propose', wrapAsyncHandler(async (req, res) => {
-    const { macAddress } = req.body
-
-    const result = await smartLockUseCases.propose(macAddress)
-
-    res.status(200).json(result)
-  }))
-
-  expressApp.get('/devices/:id/proposal-status', wrapAsyncHandler(async (req, res) => {
-    const { id } = req.params
-
-    const status = await deviceRegistrationService.waitForVerificationStatus(id)
-
-    res.status(200).send(status)
-  }))
-
-  expressApp.post('/auth/get-device-token', wrapAsyncHandler(async (req, res) => {
-    const { verificationToken } = req.body
-
-    const deviceToken = await smartLockUseCases.getDeviceToken(verificationToken)
-
-    res.send(deviceToken)
-  }))
-
-  const authorizeDevice = async (authorization: string | undefined, deviceId: string) => {
-    if (!authorization) throw new NotImplementedError()
-
-    const [_, deviceToken] = authorization.split(' ')
-    const { deviceId: tokenDeviceId } = await deviceTokenService.decodeToken(deviceToken)
-
-    if (tokenDeviceId != deviceId) throw new NotImplementedError()
-  }
-
   expressApp.get('/health', wrapAsyncHandler(async (req, res) => {
     res.send('Everything\'s fine.')
-  }))
-
-  expressApp.get('/devices/:id/messages/subscribe', wrapAsyncHandler(async (req, res) => {
-    const { id } = req.params
-    const { authorization } = req.headers
-    await authorizeDevice(authorization, id)
-
-    const message = await deviceMessagingService.waitForMessage(id)
-
-    res.status(200).setHeader('Content-Type', 'text/plain').send(message)
-  }))
-
-  expressApp.get('/devices/:id/sync-command', wrapAsyncHandler(async (req, res) => {
-    const { id } = req.params
-    const { authorization } = req.headers
-    await authorizeDevice(authorization, id)
-
-    const command = await smartLockUseCases.syncCommand(id)
-
-    res.status(200).setHeader('Content-Type', 'text/plain').send(command)
-  }))
-
-  expressApp.post('/devices/:id/ping', wrapAsyncHandler(async (req, res) => {
-    const { id } = req.params
-    const { authorization } = req.headers
-    await authorizeDevice(authorization, id)
-
-    smartLockUseCases.ping(id)
-
-    console.log(`Ping received from ${id}.`)
-
-    res.sendStatus(200)
-  }))
-
-  const timestamps = {}
-  expressApp.post('/devices/logtime/:label', wrapAsyncHandler(async (req, res) => {
-    const { label } = req.params
-    const timestamp = Date.now()
-    const count = Object.keys(timestamps).length
-
-    timestamps[label] = timestamp
-    console.log(`Timestamp added ${label}:${timestamp}. Count: ${count}`)
-
-    res.sendStatus(200)
   }))
 
   const errorHandler: ErrorRequestHandler = (err, req, res, next) => {

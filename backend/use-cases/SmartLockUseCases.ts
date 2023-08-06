@@ -2,7 +2,8 @@ import { NotImplementedError } from "../common/Errors"
 import { ApplicationConfiguration } from "../domain-model/common/ApplicationConfiguration"
 import { ClaimInstance, ClaimInstanceUnion } from "../domain-model/entities/ClaimInstance"
 import { DeviceProfile } from "../domain-model/entities/DeviceProfile"
-import { SmartLock } from "../domain-model/entities/SmartLock"
+import { LockCommand, SmartLock, StatusHelper } from "../domain-model/entities/SmartLock"
+import { DeviceConnectionService } from "../domain-model/services/DeviceConnectionService"
 import { DeviceMessagingService } from "../domain-model/services/DeviceMessagingService"
 import { DeviceRegistrationService, VerificationToken } from "../domain-model/services/DeviceRegistrationService"
 import { DigitalSignatureService } from "../domain-model/services/DigitalSignatureService"
@@ -30,16 +31,30 @@ class SmartLockUseCases {
     private repository: SmartLocksRepository,
     private devicesRepository: DeviceProfilesRepository,
     private accountsRepository: AccountsRepository,
-    private digitalSignatureService: DigitalSignatureService,
-    private deviceStatusStore: KeyValueService,
-    private lockStatusStore: KeyValueService,
+    private deviceConnectionService: DeviceConnectionService,
     private rulesEngineService: RulesEngineService,
-    private deviceMessagingService: DeviceMessagingService,
     private verificationTokenService: TransientTokenService<VerificationToken>,
     private deviceTokenService: TransientTokenService<DeviceToken>,
-    private config: ApplicationConfiguration,
     private deviceRegistrationService: DeviceRegistrationService
-  ) { }
+  ) {
+    deviceConnectionService.onProposal(async (e) => {
+      this.propose(e.macAddress)
+    })
+
+    deviceConnectionService.onVerificationToken(async (e) => {
+      const deviceToken = await this.getDeviceToken(e.verificationToken)
+      return { deviceToken }
+    })
+
+    deviceConnectionService.onSyncCommand(async (e) => {
+      const command = await this.syncCommand(e.profileId)
+      return { command }
+    })
+
+    deviceConnectionService.onPing(async (e) => {
+      await this.ping(e.profileId)
+    })
+  }
 
   create = this.repository.create
 
@@ -73,10 +88,12 @@ class SmartLockUseCases {
   }
 
   ping = async (deviceProfileId: string): Promise<void> => {
-    this.deviceStatusStore.set(deviceProfileId, 'connected')
+    this.deviceConnectionService
+      .getDevice(deviceProfileId)
+      .setStatus('connected')
   }
 
-  sendCommand = async (request: { smartLockId: string, command: string }, accountId: string): Promise<UserFacingExecutionResult> => {
+  sendCommand = async (request: { smartLockId: string, command: LockCommand }, accountId: string): Promise<UserFacingExecutionResult> => {
     const smartLock = await this.repository.readByIdIncludeDeviceAndAuthorizationRule(request.smartLockId)
 
     if (!smartLock?.authorizationRule || !smartLock?.authorizationRuleArgs) throw new NotImplementedError()
@@ -95,17 +112,16 @@ class SmartLockUseCases {
     if (result.authorized) {
       const updatedLockStatus = (await this.repository
         .updateLockStatus(
-          smartLock.id, 
-          this.deviceMessagingService.commands.toStatus(request.command)
+          smartLock.id,
+          StatusHelper.commandToStatus(request.command)
         ))
         ?.lockStatus
 
       if (!updatedLockStatus) throw new NotImplementedError()
 
-      this.deviceMessagingService.send(
-        smartLock.device,
-        this.deviceMessagingService.commands.fromStatus(updatedLockStatus)
-      )
+      this.deviceConnectionService
+        .getDevice(smartLock.device.id)
+        .sendCommand(StatusHelper.statusToComand(updatedLockStatus))
     }
 
     return ({
@@ -114,12 +130,12 @@ class SmartLockUseCases {
     })
   }
 
-  syncCommand = async (deviceId: string): Promise<string> => {
+  syncCommand = async (deviceId: string): Promise<LockCommand> => {
     const device = await this.devicesRepository.readByIdIncludeSmartLock(deviceId)
 
     if (!device?.smartLock) throw new NotImplementedError()
 
-    return this.deviceMessagingService.commands.fromStatus(device.smartLock.lockStatus)
+    return StatusHelper.statusToComand(device.smartLock.lockStatus)
   }
 
   update = this.repository.update
