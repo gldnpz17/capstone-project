@@ -36,7 +36,6 @@ function AddClaim() {
 
 
             <div className="cover-claim">
-
                 <ThemeProvider theme={theme} >
                     <Grid>
                         <Card style={{ maxWidth: 450, padding: "2px 5px", margin: "0 auto" }}>

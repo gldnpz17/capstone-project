@@ -8,6 +8,7 @@ import SmartLockList from './pages/SmartLockList.js';
 import { LoginPage } from './pages/Login.js';
 import { NavSideBar } from './components/NavSideBar.js';
 import { LockScannerPage } from './pages/LockScanner.js';
+import { TestingPage } from './pages/Testing';
 
 const link = createHttpLink({
     uri: "/graphql",
@@ -60,6 +61,7 @@ function App() {
                                     <Route path="accounts" element={<AccManagement />} />
                                     <Route path="smart-locks" element={<SmartLockList />} />
                                 </Route>
+                                <Route path="testing" element={<TestingPage />} />
                                 <Route path="editor/:ruleId" element={<AuthorizationRuleEditor />} />
                             </Route>
                         </Routes>

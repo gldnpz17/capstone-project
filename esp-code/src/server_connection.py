@@ -4,6 +4,9 @@ import uasyncio
 from libs.async_urequests import urequests as aurequests
 from common import CancellationToken
 from esp_network import EspStation
+import utime
+import ntptime
+import machine
 
 class Proposal:
     def __init__(self, serverDomainName, cert, event_loop, espStation: EspStation, handleAccepted, handleRejected):
@@ -123,6 +126,15 @@ class ServerConnection:
         self.connectionStatus = "Connected"
         self.cancellationToken: CancellationToken = None
 
+        self.TIMESTAMP_ENABLED = True
+        self.message_count = 0
+        # self.report_times = []
+
+        if self.TIMESTAMP_ENABLED:
+            ntptime.host = 'time.nist.gov'
+            ntptime.settime()
+            print('NTP time synchronized.')
+
     async def send_ping(self):
         response = None
         while not response:
@@ -168,6 +180,26 @@ class ServerConnection:
         if response.status_code == 502:
             raise Exception("Timeout code received.")  # type: ignore
         elif response.status_code == 200:
+            epoch_offset = 946684800000 # Offset between 1 Jan 2000 and 1 Jan 1970.
+            # Timestamp in milliseconds since unix epoch.
+            print(utime.time_ns())
+            print(utime.time())
+            timestamp = round(epoch_offset + (utime.time_ns() / 10**6))
+            print(f'Message received. Message: {response.text}. Timestamp: {timestamp}.')
+
+            if self.TIMESTAMP_ENABLED:
+                self.message_count = self.message_count + 1
+                print(f'Message(s) received: {self.message_count}')
+                # start = utime.time_ns()
+                # await aurequests.post(
+                #     f'https://{self.proposal.serverDomainName}/devices/logtime/{self.timestamp_count}'
+                # )
+                # end = utime.time_ns()
+                # report_time = round((end - start) / 10**6) # Report time in ms.
+                # self.report_times.append(report_time)
+                # self.timestamp_count = self.timestamp_count + 1
+                # print(f'Timestamp logged. Report time: {report_time} ms.')
+
             return response.text
         else:
             print('(Subscribe) An error has occured.')  # type: ignore

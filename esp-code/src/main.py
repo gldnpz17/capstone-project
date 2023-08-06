@@ -457,7 +457,7 @@ async def start_webrepl():
 
 async def main(event_loop):
     DEVELOPMENT_MODE = False
-    STATION_SERVER_MODE = False
+    STATION_SERVER_MODE = True
 
     station = EspStation()
     if STATION_SERVER_MODE:

@@ -481,6 +481,18 @@ function authorize(request: SmartLock.Request, args: Args) {
     res.sendStatus(200)
   }))
 
+  const timestamps = {}
+  expressApp.post('/devices/logtime/:label', wrapAsyncHandler(async (req, res) => {
+    const { label } = req.params
+    const timestamp = Date.now()
+    const count = Object.keys(timestamps).length
+
+    timestamps[label] = timestamp
+    console.log(`Timestamp added ${label}:${timestamp}. Count: ${count}`)
+
+    res.sendStatus(200)
+  }))
+
   const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     console.log('An unhandled error occured!')
     console.log(err)
@@ -566,6 +578,20 @@ function authorize(request: SmartLock.Request, args: Args) {
   httpServer.listen(config.portNumber, () => {
     console.log(`Smart lock back end server started. Listening on port ${config.portNumber}.`)
   })
+
+  // const device = await devicesRepository.readById("c85256d5-8124-47bf-85be-9f860c67ca6d")
+
+  // if (device) {
+  //   let command = "lock"
+  //   setInterval(() => {
+  //     deviceMessagingService.send(device, command)
+  //     if (command == "lock") {
+  //       command = "unlock"
+  //     } else if (command == "unlock") {
+  //       command = "lock"
+  //     }
+  //   }, 100)
+  // }
 }
 
 main()
